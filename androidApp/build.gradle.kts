@@ -22,7 +22,7 @@ dependencies {
 }
 
 android {
-    namespace = "com.shashluchok.templatekmpproject"
+    namespace = "com.shashluchok.skinwatch"
     // Plain `compileSdk = 37` resolves to the SDK Manager target "android-37", but the
     // installed platform for API 37 is "android-37.0" (Android's new major.minor SDK
     // release scheme -- see https://developer.android.com/build/releases/agp-9-0-0-release-notes).
@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.shashluchok.templatekmpproject"
+        applicationId = "com.shashluchok.skinwatch"
         minSdk =
             libs.versions.android.minSdk
                 .get()

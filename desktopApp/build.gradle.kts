@@ -19,11 +19,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.shashluchok.templatekmpproject.MainKt"
+        mainClass = "com.shashluchok.skinwatch.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.shashluchok.templatekmpproject"
+            packageName = "com.shashluchok.skinwatch"
             packageVersion = "1.0.0"
         }
     }

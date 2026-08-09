@@ -1,4 +1,4 @@
-rootProject.name = "TemplateKmpProject"
+rootProject.name = "SkinWatch"
 
 pluginManagement {
     repositories {

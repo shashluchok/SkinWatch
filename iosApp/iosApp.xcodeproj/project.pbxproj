@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		B8D27A114318C48470F00670 /* TemplateKmpProject.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TemplateKmpProject.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B8D27A114318C48470F00670 /* SkinWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SkinWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -59,7 +59,7 @@
 		A7F726B1C334B9F7EB42637F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B8D27A114318C48470F00670 /* TemplateKmpProject.app */,
+				B8D27A114318C48470F00670 /* SkinWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -87,7 +87,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = B8D27A114318C48470F00670 /* TemplateKmpProject.app */;
+			productReference = B8D27A114318C48470F00670 /* SkinWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

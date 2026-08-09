@@ -1,4 +1,4 @@
-Это Kotlin Multiplatform шаблонный проект с таргетами Android, iOS, Web, Desktop (JVM).
+SkinWatch — Kotlin Multiplatform-приложение с таргетами Android, iOS, Web, Desktop (JVM).
 
 * [/iosApp](./iosApp/iosApp) — iOS-приложение. Даже если UI шарится через Compose Multiplatform,
   эта точка входа всё равно нужна для iOS-приложения. Сюда же добавляется SwiftUI-код, если он понадобится.
@@ -32,10 +32,8 @@
 
 ### Что уже настроено
 
-Шаблон идёт с небольшим готовым базисом, чтобы не собирать его заново в каждом новом проекте:
-
 - **DI** — [Koin](https://insert-koin.io/), разложен по слоям `di/{App,Data,Domain,ViewModels}Module`
-  (папка `di/` внутри [shared-модуля](./shared/src/commonMain/kotlin), пакет `com.shashluchok.<ваш-пакет>`).
+  (папка `di/` внутри [shared-модуля](./shared/src/commonMain/kotlin), пакет `com.shashluchok.skinwatch`).
   Платформенные модули (например, Android) передаются в общую composable `AppContent()`
   через параметр `platformModule`.
 - **Навигация + экраны** — [Navigation3](https://developer.android.com/guide/navigation/navigation-3),
@@ -70,22 +68,6 @@
 `build.gradle.kts` сам выставляет `core.hooksPath=.githooks` в локальном `.git/config` — руками
 `git config` делать не нужно.
 
-### Настройка под новый проект
-
-Всё, что касается переименования, лежит в отдельной папке [/bootstrap](./bootstrap) —
-после успешного запуска её можно целиком удалить из проекта.
-
-1. Отредактируйте [bootstrap/template.toml](./bootstrap/template.toml) — `app_name`
-   (отображаемое имя) и `package` .
-2. Один раз запустите `python bootstrap/bootstrap_project.py`. Переименует и пакет
-   (включая директории — вложенность может быть любой), и саму папку проекта на диске
-   в `app_name`. Это просто подстановка текста, импорты не переупорядочивает — если
-   новый пакет сильно отличается по алфавитному порядку от старого, ktlint может
-   пожаловаться на порядок импортов в паре файлов; правится одним `./gradlew ktlintFormat`.
-   - Переименование самой папки на диске может не выполниться, останется только закрыть всё, что открыто на этой папке,
-     и переименовать её вручную.
-3. Удалите папку `bootstrap/` — она больше не нужна.
-
 ### Запуск приложений
 
 Используйте конфигурации запуска из тулбара IDE. Либо эти команды:
@@ -109,5 +91,3 @@
   - Wasm-таргет: `./gradlew :shared:wasmJsTest`
   - JS-таргет: `./gradlew :shared:jsTest`
 - iOS-тесты: `./gradlew :shared:iosSimulatorArm64Test`
-
----

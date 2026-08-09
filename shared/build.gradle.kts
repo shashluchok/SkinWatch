@@ -34,7 +34,7 @@ kotlin {
     }
 
     android {
-        namespace = "com.shashluchok.templatekmpproject.shared"
+        namespace = "com.shashluchok.skinwatch.shared"
         // Plain `compileSdk = 37` resolves to the SDK Manager target "android-37", but the
         // installed platform for API 37 is "android-37.0" (Android's new major.minor SDK
         // release scheme -- see https://developer.android.com/build/releases/agp-9-0-0-release-notes).
