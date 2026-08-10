@@ -15,11 +15,16 @@ android-targetSdk = "37"
 
 # AndroidX
 androidx-activity = "1.13.0"
+androidx-coreSplashscreen = "1.2.0"
 androidx-lifecycle = "2.11.0"
 
 # Compose
 composeMultiplatform = "1.11.1"
 material3 = "1.11.0-alpha07"
+# org.jetbrains.compose.material:material-icons-core/-extended are not published in lockstep
+# with composeMultiplatform releases (nothing newer than 1.7.3 exists on Maven Central as of
+# this writing) -- pinned independently rather than via version.ref = "composeMultiplatform".
+materialIconsCore = "1.7.3"
 composeRules = "0.6.4"
 # Pinned below the latest compose-rules release: 0.5.x/0.6.x target detekt 2.0.0-alpha,
 # 0.4.28 is the last release compatible with the stable detekt 1.23.x line.
@@ -28,6 +33,9 @@ composeRulesDetekt = "0.4.28"
 # Kotlin ecosystem
 kotlin-wrappers = "2026.8.0"
 kotlinx-coroutines = "1.11.0"
+
+# Animation
+compottie = "2.2.4"
 
 # DI
 koin = "4.2.2"
@@ -41,6 +49,7 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 
 # AndroidX
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-coreSplashscreen" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 
@@ -52,11 +61,13 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+compose-materialIconsCore = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "materialIconsCore" }
 compose-rules = { module = "io.nlopez.compose.rules:ktlint", version.ref = "composeRules" }
 compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRulesDetekt" }
 
 # Kotlin ecosystem
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 wrappers-browser = { module = "org.jetbrains.kotlin-wrappers:kotlin-browser", version.ref = "kotlin-wrappers" }
 
 # DI
@@ -66,6 +77,9 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 
 # Navigation
 navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+
+# Animation
+compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "compottie" }
 
 [plugins]
 # Android

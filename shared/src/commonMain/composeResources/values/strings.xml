@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_splash__wordmark">SkinWatch</string>
+    <string name="screen_splash__tagline">Оценка инвентаря CS2</string>
+    <string name="dev__screen_inventory__empty_state">Инвентарь скоро появится</string>
+    <string name="dev__screen_watchlist__empty_state">Список отслеживания скоро появится</string>
+    <string name="dev__screen_settings__empty_state">Настройки скоро появятся</string>
+    <string name="navbar__inventory_tab">Инвентарь</string>
+    <string name="navbar__watchlist_tab">Список</string>
+    <string name="navbar__settings_tab">Настройки</string>
+</resources>

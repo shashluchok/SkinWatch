@@ -1,9 +1,9 @@
-package com.shashluchok.skinwatch.presentation.screen.main
+package com.shashluchok.skinwatch.presentation.screen.inventory
 
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
-internal class MainViewModel : BaseViewModel<MainViewModel.State, MainViewModel.Action>() {
+internal class InventoryViewModel : BaseViewModel<InventoryViewModel.State, InventoryViewModel.Action>() {
     data object State
 
     sealed interface Action

@@ -11,42 +11,6 @@ SkinWatch — Kotlin Multiplatform-приложение с таргетами An
     подходящее место для такого кода. Аналогично для Desktop (JVM)-специфичного кода — папка
     [jvmMain](./shared/src/jvmMain/kotlin).
 
-### Базовая конфигурация
-
-| | |
-|---|---|
-| Gradle | 9.7.0 |
-| Kotlin | 2.4.10 |
-| AGP (Android Gradle Plugin) | 9.2.1 |
-| Compose Multiplatform | 1.11.1 |
-| Android compileSdk / targetSdk | 37 |
-| Android minSdk | 28 |
-| JVM target | 11 |
-| ktlint (плагин) | 14.2.0 |
-| detekt (плагин) | 1.23.8 |
-| Koin | 4.2.2 |
-| Navigation3 | 1.1.1 |
-
-Версии зафиксированы централизованно в [gradle/libs.versions.toml](./gradle/libs.versions.toml)
-(version catalog) — там же и остальные зависимости (AndroidX, kotlinx.coroutines и т.д.).
-
-### Что уже настроено
-
-- **DI** — [Koin](https://insert-koin.io/), разложен по слоям `di/{App,Data,Domain,ViewModels}Module`
-  (папка `di/` внутри [shared-модуля](./shared/src/commonMain/kotlin), пакет `com.shashluchok.skinwatch`).
-  Платформенные модули (например, Android) передаются в общую composable `AppContent()`
-  через параметр `platformModule`.
-- **Навигация + экраны** — [Navigation3](https://developer.android.com/guide/navigation/navigation-3),
-  с минимальным MVI-скелетом экрана (`BaseViewModel`, `*State`, `*Action`) в
-  `presentation/screen` внутри [shared-модуля](./shared/src/commonMain/kotlin).
-- **Тема** — `AppTheme`/`Dimens`/цветовая схема в
-  `presentation/theme` внутри [shared-модуля](./shared/src/commonMain/kotlin).
-  Цвета сейчас заглушки (`Color.Unspecified`) — замените на реальные дизайн-токены под конкретный проект.
-- **Конвенция строковых ключей** — формат `[dev__](screen_X|dialog_X)__component[__type][__property]`,
-  проверяется через [config/string-keys](./config/string-keys) (подробнее — ниже, в разделе про git-хуки).
-- **Git-хуки** — ktlint, detekt и проверка формата строковых ключей на застейдженных файлах при коммите
-  (подробнее — ниже).
-
 ### Git-хуки
 
 `.githooks/pre-commit` гоняется при каждом `git commit` и проверяет только застейдженные файлы:
