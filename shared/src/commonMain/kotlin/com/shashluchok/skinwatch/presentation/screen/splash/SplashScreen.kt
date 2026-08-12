@@ -5,6 +5,7 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,7 +31,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.presentation.theme.AppFontFamilies
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
-import com.shashluchok.skinwatch.presentation.theme.LocalMotion
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.screen_splash__tagline
 import com.shashluchok.skinwatch.resources.screen_splash__wordmark
@@ -44,10 +44,14 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val REEL_ASSET_ASPECT_RATIO = 260f / 120f
-private const val REEL_ASSET_PATH = "files/splash_reel.json"
+private const val REEL_ASSET_PATH_DARK = "files/splash_reel.json"
+private const val REEL_ASSET_PATH_LIGHT = "files/splash_reel_light.json"
+private const val REEL_NARRATIVE_END_FRAME = 175f
+private const val REEL_COMPOSITION_END_FRAME = 600f
+private const val REEL_NARRATIVE_END_PROGRESS = REEL_NARRATIVE_END_FRAME / REEL_COMPOSITION_END_FRAME
 
-private const val WORDMARK_REVEAL_DURATION_MS = 650
-private const val TAGLINE_REVEAL_DURATION_MS = 950
+private const val WORDMARK_REVEAL_DURATION_MS = 550
+private const val TAGLINE_REVEAL_DURATION_MS = 650
 
 @Composable
 internal fun SplashScreen(
@@ -68,10 +72,9 @@ internal fun SplashScreen(
 @Composable
 private fun SplashScreen(modifier: Modifier = Modifier) {
     val dimens = LocalDimens.current
-    val motion = LocalMotion.current
     val density = LocalDensity.current
 
-    val slideDistancePx = with(density) { -dimens.padding.extraLarge.toPx() }
+    val slideDistancePx = with(density) { -dimens.padding.small.toPx() }
     val wordmarkAlpha = remember { Animatable(0f) }
     val taglineAlpha = remember { Animatable(0f) }
 
@@ -84,7 +87,6 @@ private fun SplashScreen(modifier: Modifier = Modifier) {
                 targetValue = 1f,
                 animationSpec = tween(
                     durationMillis = WORDMARK_REVEAL_DURATION_MS,
-                    easing = motion.easing.emphasizedDecelerate,
                 ),
             )
         }
@@ -93,7 +95,6 @@ private fun SplashScreen(modifier: Modifier = Modifier) {
                 targetValue = 1f,
                 animationSpec = tween(
                     durationMillis = TAGLINE_REVEAL_DURATION_MS,
-                    easing = motion.easing.emphasizedDecelerate,
                 ),
             )
         }
@@ -145,14 +146,15 @@ private fun ReelAnimation(
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val composition by rememberLottieComposition {
-        LottieCompositionSpec.JsonString(Res.readBytes(REEL_ASSET_PATH).decodeToString())
+    val assetPath = if (isSystemInDarkTheme()) REEL_ASSET_PATH_DARK else REEL_ASSET_PATH_LIGHT
+    val composition by rememberLottieComposition(assetPath) {
+        LottieCompositionSpec.JsonString(Res.readBytes(assetPath).decodeToString())
     }
     val progress by animateLottieCompositionAsState(composition = composition, iterations = 1)
     val currentOnFinish by rememberUpdatedState(onFinish)
 
     LaunchedEffect(Unit) {
-        snapshotFlow { progress }.first { it >= 1f }
+        snapshotFlow { progress }.first { it >= REEL_NARRATIVE_END_PROGRESS }
         currentOnFinish()
     }
 
