@@ -13,40 +13,21 @@ internal class SplashViewModel : BaseViewModel<SplashViewModel.State, SplashView
         val isReady: Boolean = false,
     )
 
-    sealed interface Action {
-        data object ContentRevealed : Action
-    }
+    sealed interface Action
 
     override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
-
-    // isReady requires both signals: SPLASH_DURATION is a minimum floor (so a fast reel load
-    // still gets a brief, deliberate pause before navigating away), and ContentRevealed guards
-    // against the reel/text reveal taking longer than that floor -- e.g. on a slow asset parse --
-    // which would otherwise cut the reel or the wordmark/tagline reveal off mid-animation.
-    private var isMinDurationElapsed = false
-    private var isContentRevealed = false
 
     init {
         viewModelScope.launch {
             delay(SPLASH_DURATION)
-            isMinDurationElapsed = true
             updateReadiness()
         }
     }
 
-    override fun onAction(action: Action) {
-        when (action) {
-            Action.ContentRevealed -> {
-                isContentRevealed = true
-                updateReadiness()
-            }
-        }
-    }
+    override fun onAction(action: Action) = Unit
 
     private fun updateReadiness() {
-        if (isMinDurationElapsed && isContentRevealed) {
-            state = state.copy(isReady = true)
-        }
+        state = state.copy(isReady = true)
     }
 
     companion object {

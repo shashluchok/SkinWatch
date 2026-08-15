@@ -2,8 +2,10 @@ import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.file.FileTree
 import org.gradle.api.provider.Provider
+import org.gradle.kotlin.dsl.withType
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.tasks.KtLintCheckTask
+import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 
 plugins {
     // this is necessary to avoid the plugins to be loaded multiple times
@@ -80,6 +82,11 @@ subprojects {
             }
         }
         tasks.withType<KtLintCheckTask>().configureEach {
+            if (project.hasProperty("precommit")) {
+                scopeToGitStagedFiles(project) { setSource(it) }
+            }
+        }
+        tasks.withType<KtLintFormatTask>().configureEach {
             if (project.hasProperty("precommit")) {
                 scopeToGitStagedFiles(project) { setSource(it) }
             }

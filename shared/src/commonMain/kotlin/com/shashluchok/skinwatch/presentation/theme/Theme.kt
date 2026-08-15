@@ -8,9 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 
 // Every Material3 ColorScheme role is explicitly designed here (see Color.kt for how the roles
-// not hand-picked by the M0 spec were derived via the HCT tonal-palette algorithm) -- none of
-// them fall back to Material's baseline purple defaults. `surfaceTint` is intentionally not
-// passed: it defaults to `primary`, which is exactly what we want here too.
+// not hand-picked directly were derived via the HCT tonal-palette algorithm) -- none of them fall
+// back to Material's baseline purple defaults. `surfaceTint` is intentionally not passed: it
+// defaults to `primary`, which is exactly what we want here too.
 private val LightColorScheme =
     lightColorScheme(
         background = mdThemeLightBackground,
