@@ -1,12 +1,10 @@
 package com.shashluchok.skinwatch.di
 
-import com.shashluchok.skinwatch.data.steam.SteamMarketRepositoryImpl
-import com.shashluchok.skinwatch.data.steam.currentDeviceRegionCode
-import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
 import org.koin.dsl.module
 
-internal val domainModule = module {
-    single<SteamMarketRepository> {
-        SteamMarketRepositoryImpl(api = get(), rateLimiter = get(), deviceRegionCode = ::currentDeviceRegionCode)
-    }
-}
+/**
+ * Reserved for pure business-logic bindings (use cases/interactors) once the project has any --
+ * repository contracts are bound to their implementations in [dataModule], since those
+ * implementations live in `data.*`.
+ */
+internal val domainModule = module {}

@@ -18,6 +18,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.androidx.room3) apply false
 }
 
 // Point Git at the repo-tracked hooks (.githooks/) so the pre-commit checks (string

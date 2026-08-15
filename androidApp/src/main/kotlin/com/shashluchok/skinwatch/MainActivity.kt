@@ -14,8 +14,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        val platformModule = androidModule(applicationContext)
         setContent {
-            AppContent(platformModule = androidModule)
+            AppContent(platformModule = platformModule)
         }
     }
 }

@@ -25,6 +25,7 @@ kotlin {
             implementation(project(":shared"))
 
             implementation(libs.compose.ui)
+            implementation(libs.koin.core)
         }
     }
 }

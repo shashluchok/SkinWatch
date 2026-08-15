@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room3)
 }
 
 compose.resources {
@@ -81,6 +83,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
+            implementation(libs.androidx.sqlite.bundled)
         }
         commonMain.dependencies {
             implementation(libs.koin.core)
@@ -102,20 +105,36 @@ kotlin {
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.serialization.kotlinxJson)
             implementation(libs.kotlinx.serializationJson)
+            implementation(libs.androidx.room3.runtime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutinesTest)
             implementation(libs.ktor.client.mock)
         }
+        iosMain.dependencies {
+            implementation(libs.androidx.sqlite.bundled)
+        }
+        jvmMain.dependencies {
+            implementation(libs.androidx.sqlite.bundled)
+        }
         jsMain.dependencies {
             implementation(libs.wrappers.browser)
+        }
+        webMain.dependencies {
+            implementation(project(":sqliteWebWorker"))
         }
     }
 }
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+    add("kspAndroid", libs.androidx.room3.compiler)
+    add("kspJvm", libs.androidx.room3.compiler)
+    add("kspIosArm64", libs.androidx.room3.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room3.compiler)
+    add("kspJs", libs.androidx.room3.compiler)
+    add("kspWasmJs", libs.androidx.room3.compiler)
 }
 
 detekt {
@@ -133,4 +152,8 @@ detekt {
                 .filterNot { it.path.contains("${File.separator}generated${File.separator}") }
         },
     )
+}
+
+room3 {
+    schemaDirectory("$projectDir/schemas")
 }
