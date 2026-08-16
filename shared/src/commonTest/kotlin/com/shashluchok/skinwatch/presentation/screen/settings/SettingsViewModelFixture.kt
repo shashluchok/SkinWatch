@@ -1,5 +1,10 @@
 package com.shashluchok.skinwatch.presentation.screen.settings
 
+import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
+import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateResult
+import com.shashluchok.skinwatch.domain.exchangerate.FakeCurrencyConversionRepository
+import com.shashluchok.skinwatch.domain.exchangerate.FakeExchangeRateRepository
+import com.shashluchok.skinwatch.domain.exchangerate.HasConvertiblePricesInteractor
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.settings.ObserveSelectedCurrencyInteractor
 import com.shashluchok.skinwatch.domain.settings.SetSelectedCurrencyInteractor
@@ -16,13 +21,24 @@ import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 internal class SettingsViewModelFixture(
     initialSelectedCurrency: SteamCurrency? = null,
     defaultCurrency: SteamCurrency = SteamCurrency.USD,
+    hasConvertibleData: Boolean = false,
+    ratesResult: ExchangeRateResult<Map<SteamCurrency, Double>> = ExchangeRateResult.Success(emptyMap()),
 ) {
     val settingsRepository = FakeSettingsRepository(initialCurrency = initialSelectedCurrency)
     val steamMarketRepository = FakeSteamMarketRepository(defaultCurrency = defaultCurrency)
+    val currencyConversionRepository = FakeCurrencyConversionRepository(hasData = hasConvertibleData)
+    val exchangeRateRepository = FakeExchangeRateRepository(result = ratesResult)
 
     fun newViewModel() = SettingsViewModel(
         observeSelectedCurrency = ObserveSelectedCurrencyInteractor(settingsRepository = settingsRepository),
         setSelectedCurrency = SetSelectedCurrencyInteractor(settingsRepository = settingsRepository),
         getDefaultCurrency = GetDefaultCurrencyInteractor(steamMarketRepository = steamMarketRepository),
+        hasConvertiblePrices = HasConvertiblePricesInteractor(
+            currencyConversionRepository = currencyConversionRepository,
+        ),
+        convertStoredPrices = ConvertStoredPricesInteractor(
+            exchangeRateRepository = exchangeRateRepository,
+            currencyConversionRepository = currencyConversionRepository,
+        ),
     )
 }

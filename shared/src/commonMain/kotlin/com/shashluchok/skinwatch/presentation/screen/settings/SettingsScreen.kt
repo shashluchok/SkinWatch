@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyChangeConfirmationDialog
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheet
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
@@ -68,6 +69,14 @@ private fun SettingsScreen(
             resolvedAutoCurrency = state.resolvedAutoCurrency,
             onOptionSelect = { onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(it)) },
             onDismiss = { onAction(SettingsViewModel.Action.OnDismissCurrencyPicker) },
+        )
+    }
+
+    if (state.isCurrencyChangeDialogVisible) {
+        CurrencyChangeConfirmationDialog(
+            status = state.conversionStatus,
+            onConfirm = { onAction(SettingsViewModel.Action.OnCurrencyChangeConfirmed) },
+            onCancel = { onAction(SettingsViewModel.Action.OnCurrencyChangeCancelled) },
         )
     }
 }

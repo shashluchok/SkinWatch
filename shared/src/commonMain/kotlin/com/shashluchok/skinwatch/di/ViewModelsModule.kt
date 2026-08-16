@@ -29,6 +29,8 @@ internal val viewModelModule = module {
             observeSelectedCurrency = get(),
             setSelectedCurrency = get(),
             getDefaultCurrency = get(),
+            hasConvertiblePrices = get(),
+            convertStoredPrices = get(),
         )
     }
 }

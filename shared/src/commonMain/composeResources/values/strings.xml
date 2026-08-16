@@ -33,6 +33,11 @@
     <string name="dev__screen_settings__currency_row__title">Валюта</string>
     <string name="dev__screen_settings__currency_picker__title">Валюта</string>
     <string name="dev__screen_settings__currency_auto_option">Авто (%1$s)</string>
+    <string name="dev__dialog_currency_change__title">Сменить валюту?</string>
+    <string name="dev__dialog_currency_change__message">Все сохранённые цены будут пересчитаны по текущему курсу. Изменение необратимо. Повторная смена валюты туда и обратно может немного менять итоговые суммы из-за округления и изменения курса.</string>
+    <string name="dev__dialog_currency_change__confirm_button">Сменить</string>
+    <string name="dev__dialog_currency_change__cancel_button">Отмена</string>
+    <string name="dev__dialog_currency_change__error_message">Не удалось получить курс. Попробуйте ещё раз.</string>
     <string name="navbar__inventory_tab">Инвентарь</string>
     <string name="navbar__watchlist_tab">Список</string>
     <string name="navbar__settings_tab">Настройки</string>

@@ -1,5 +1,7 @@
 package com.shashluchok.skinwatch.presentation.screen.settings
 
+import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateError
+import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateResult
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -105,5 +107,115 @@ class SettingsViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertNull(fixture.settingsRepository.selectedCurrency.first())
+    }
+
+    @Test
+    fun `OnCurrencyOptionSelected applies immediately when there is nothing to convert`() = runTest(dispatcher) {
+        val fixture = SettingsViewModelFixture(hasConvertibleData = false)
+        val viewModel = fixture.newViewModel()
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyRowClick)
+
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(SteamCurrency.EUR))
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(SteamCurrency.EUR, fixture.settingsRepository.selectedCurrency.first())
+        assertFalse(viewModel.stateFlow.value.isCurrencyChangeDialogVisible)
+    }
+
+    @Test
+    fun `OnCurrencyOptionSelected opens the confirmation dialog when there is data to convert`() = runTest(dispatcher) {
+        val fixture = SettingsViewModelFixture(hasConvertibleData = true, initialSelectedCurrency = SteamCurrency.USD)
+        val viewModel = fixture.newViewModel()
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyRowClick)
+
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(SteamCurrency.EUR))
+        dispatcher.scheduler.runCurrent()
+
+        assertTrue(viewModel.stateFlow.value.isCurrencyChangeDialogVisible)
+        assertEquals(SteamCurrency.EUR, viewModel.stateFlow.value.pendingCurrency)
+        // The override is not saved yet -- only the confirmation flips it.
+        assertEquals(SteamCurrency.USD, fixture.settingsRepository.selectedCurrency.first())
+    }
+
+    @Test
+    fun `OnCurrencyChangeConfirmed with an explicit currency converts to it and saves it as the override`() =
+        runTest(dispatcher) {
+            val rates = mapOf(SteamCurrency.USD to 1.08)
+            val fixture = SettingsViewModelFixture(
+                hasConvertibleData = true,
+                ratesResult = ExchangeRateResult.Success(rates),
+            )
+            val viewModel = fixture.newViewModel()
+            viewModel.onAction(SettingsViewModel.Action.OnCurrencyRowClick)
+            viewModel.onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(SteamCurrency.EUR))
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.onAction(SettingsViewModel.Action.OnCurrencyChangeConfirmed)
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals(SteamCurrency.EUR, fixture.exchangeRateRepository.lastRequestedBase)
+            val call = fixture.currencyConversionRepository.convertAllCalls.single()
+            assertEquals(SteamCurrency.EUR, call.targetCurrency)
+            assertEquals(SteamCurrency.EUR, call.newSelectedCurrency)
+            assertFalse(viewModel.stateFlow.value.isCurrencyChangeDialogVisible)
+            assertEquals(SettingsViewModel.ConversionStatus.Idle, viewModel.stateFlow.value.conversionStatus)
+        }
+
+    @Test
+    fun `OnCurrencyChangeConfirmed with Auto resolves the target currency before converting`() = runTest(dispatcher) {
+        val fixture = SettingsViewModelFixture(
+            hasConvertibleData = true,
+            defaultCurrency = SteamCurrency.GBP,
+            ratesResult = ExchangeRateResult.Success(emptyMap()),
+        )
+        val viewModel = fixture.newViewModel()
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyRowClick)
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(null))
+        dispatcher.scheduler.runCurrent()
+
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyChangeConfirmed)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(SteamCurrency.GBP, fixture.exchangeRateRepository.lastRequestedBase)
+        val call = fixture.currencyConversionRepository.convertAllCalls.single()
+        assertEquals(SteamCurrency.GBP, call.targetCurrency)
+        assertEquals(null, call.newSelectedCurrency)
+    }
+
+    @Test
+    fun `OnCurrencyChangeConfirmed on failure keeps the dialog open with the error`() = runTest(dispatcher) {
+        val fixture = SettingsViewModelFixture(
+            hasConvertibleData = true,
+            ratesResult = ExchangeRateResult.Failure(ExchangeRateError.Network),
+        )
+        val viewModel = fixture.newViewModel()
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyRowClick)
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(SteamCurrency.EUR))
+        dispatcher.scheduler.runCurrent()
+
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyChangeConfirmed)
+        dispatcher.scheduler.runCurrent()
+
+        assertTrue(viewModel.stateFlow.value.isCurrencyChangeDialogVisible)
+        assertEquals(
+            SettingsViewModel.ConversionStatus.Failed(ExchangeRateError.Network),
+            viewModel.stateFlow.value.conversionStatus,
+        )
+        assertTrue(fixture.currencyConversionRepository.convertAllCalls.isEmpty())
+    }
+
+    @Test
+    fun `OnCurrencyChangeCancelled closes the dialog without converting anything`() = runTest(dispatcher) {
+        val fixture = SettingsViewModelFixture(hasConvertibleData = true)
+        val viewModel = fixture.newViewModel()
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyRowClick)
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(SteamCurrency.EUR))
+        dispatcher.scheduler.runCurrent()
+
+        viewModel.onAction(SettingsViewModel.Action.OnCurrencyChangeCancelled)
+
+        assertFalse(viewModel.stateFlow.value.isCurrencyChangeDialogVisible)
+        assertTrue(fixture.currencyConversionRepository.convertAllCalls.isEmpty())
+        assertEquals(null, fixture.settingsRepository.selectedCurrency.first())
     }
 }

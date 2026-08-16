@@ -19,4 +19,13 @@ internal interface InventoryDao {
 
     @Query("DELETE FROM InventoryItem WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM InventoryItem)")
+    suspend fun hasAny(): Boolean
+
+    @Query("SELECT * FROM InventoryItem")
+    suspend fun getAll(): List<InventoryItemEntity>
+
+    @Update
+    suspend fun updateAll(entities: List<InventoryItemEntity>)
 }

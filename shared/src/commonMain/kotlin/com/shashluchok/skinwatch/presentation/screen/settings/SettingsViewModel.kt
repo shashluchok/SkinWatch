@@ -1,6 +1,10 @@
 package com.shashluchok.skinwatch.presentation.screen.settings
 
 import androidx.lifecycle.viewModelScope
+import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
+import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesResult
+import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateError
+import com.shashluchok.skinwatch.domain.exchangerate.HasConvertiblePricesInteractor
 import com.shashluchok.skinwatch.domain.settings.ObserveSelectedCurrencyInteractor
 import com.shashluchok.skinwatch.domain.settings.SetSelectedCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.GetDefaultCurrencyInteractor
@@ -14,13 +18,28 @@ import kotlinx.coroutines.launch
 internal class SettingsViewModel(
     private val observeSelectedCurrency: ObserveSelectedCurrencyInteractor,
     private val setSelectedCurrency: SetSelectedCurrencyInteractor,
-    getDefaultCurrency: GetDefaultCurrencyInteractor,
+    private val getDefaultCurrency: GetDefaultCurrencyInteractor,
+    private val hasConvertiblePrices: HasConvertiblePricesInteractor,
+    private val convertStoredPrices: ConvertStoredPricesInteractor,
 ) : BaseViewModel<SettingsViewModel.State, SettingsViewModel.Action>() {
     data class State(
         val selectedCurrency: SteamCurrency? = null,
         val resolvedAutoCurrency: SteamCurrency,
         val isCurrencyPickerVisible: Boolean = false,
+        val isCurrencyChangeDialogVisible: Boolean = false,
+        val pendingCurrency: SteamCurrency? = null,
+        val conversionStatus: ConversionStatus = ConversionStatus.Idle,
     )
+
+    sealed interface ConversionStatus {
+        data object Idle : ConversionStatus
+
+        data object InProgress : ConversionStatus
+
+        data class Failed(
+            val error: ExchangeRateError,
+        ) : ConversionStatus
+    }
 
     sealed interface Action {
         data object OnCurrencyRowClick : Action
@@ -30,6 +49,10 @@ internal class SettingsViewModel(
         ) : Action
 
         data object OnDismissCurrencyPicker : Action
+
+        data object OnCurrencyChangeConfirmed : Action
+
+        data object OnCurrencyChangeCancelled : Action
     }
 
     override val mutableStateFlow: MutableStateFlow<State> =
@@ -46,13 +69,48 @@ internal class SettingsViewModel(
             Action.OnCurrencyRowClick -> state = state.copy(isCurrencyPickerVisible = true)
             is Action.OnCurrencyOptionSelected -> onCurrencyOptionSelected(action.currency)
             Action.OnDismissCurrencyPicker -> state = state.copy(isCurrencyPickerVisible = false)
+            Action.OnCurrencyChangeConfirmed -> onCurrencyChangeConfirmed()
+            Action.OnCurrencyChangeCancelled -> onCurrencyChangeCancelled()
         }
     }
 
     private fun onCurrencyOptionSelected(currency: SteamCurrency?) {
+        state = state.copy(isCurrencyPickerVisible = false)
         viewModelScope.launch {
-            setSelectedCurrency(currency)
-            state = state.copy(isCurrencyPickerVisible = false)
+            if (hasConvertiblePrices()) {
+                state = state.copy(
+                    isCurrencyChangeDialogVisible = true,
+                    pendingCurrency = currency,
+                    conversionStatus = ConversionStatus.Idle,
+                )
+            } else {
+                setSelectedCurrency(currency)
+            }
         }
+    }
+
+    private fun onCurrencyChangeConfirmed() {
+        val pending = state.pendingCurrency
+        viewModelScope.launch {
+            state = state.copy(conversionStatus = ConversionStatus.InProgress)
+            val target = pending ?: getDefaultCurrency()
+            when (val result = convertStoredPrices(targetCurrency = target, newSelectedCurrency = pending)) {
+                ConvertStoredPricesResult.Success -> state = state.copy(
+                    isCurrencyChangeDialogVisible = false,
+                    pendingCurrency = null,
+                    conversionStatus = ConversionStatus.Idle,
+                )
+                is ConvertStoredPricesResult.Failure ->
+                    state = state.copy(conversionStatus = ConversionStatus.Failed(result.error))
+            }
+        }
+    }
+
+    private fun onCurrencyChangeCancelled() {
+        state = state.copy(
+            isCurrencyChangeDialogVisible = false,
+            pendingCurrency = null,
+            conversionStatus = ConversionStatus.Idle,
+        )
     }
 }

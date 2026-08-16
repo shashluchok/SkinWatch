@@ -1,5 +1,7 @@
 package com.shashluchok.skinwatch.di
 
+import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
+import com.shashluchok.skinwatch.domain.exchangerate.HasConvertiblePricesInteractor
 import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
@@ -32,4 +34,6 @@ internal val domainModule = module {
     single { ObserveSelectedCurrencyInteractor(settingsRepository = get()) }
     single { SetSelectedCurrencyInteractor(settingsRepository = get()) }
     single { GetDefaultCurrencyInteractor(steamMarketRepository = get()) }
+    single { HasConvertiblePricesInteractor(currencyConversionRepository = get()) }
+    single { ConvertStoredPricesInteractor(exchangeRateRepository = get(), currencyConversionRepository = get()) }
 }

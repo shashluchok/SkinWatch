@@ -3,6 +3,7 @@ package com.shashluchok.skinwatch.data.storage.pricesnapshot
 import androidx.room3.Dao
 import androidx.room3.Insert
 import androidx.room3.Query
+import androidx.room3.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -12,4 +13,13 @@ internal interface PriceSnapshotDao {
 
     @Insert
     suspend fun insert(entity: PriceSnapshotEntity)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM PriceSnapshot)")
+    suspend fun hasAny(): Boolean
+
+    @Query("SELECT * FROM PriceSnapshot")
+    suspend fun getAll(): List<PriceSnapshotEntity>
+
+    @Update
+    suspend fun updateAll(entities: List<PriceSnapshotEntity>)
 }
