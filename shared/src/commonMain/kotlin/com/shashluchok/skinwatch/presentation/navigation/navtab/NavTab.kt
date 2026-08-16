@@ -44,9 +44,13 @@ internal enum class NavTab(
     val destination: NavKey,
     val labelRes: StringResource,
     val icon: ImageVector,
+    val isEnabled: Boolean = true,
 ) {
     INVENTORY(Inventory, Res.string.navbar__inventory_tab, Icons.AutoMirrored.Filled.List),
-    WATCHLIST(Watchlist, Res.string.navbar__watchlist_tab, Icons.Default.Star),
+
+    // Disabled: a plain wishlist duplicates Inventory with no own-specific value. Worth enabling
+    // once it can drive real price-target alerts -- until then it's not shown anywhere.
+    WATCHLIST(Watchlist, Res.string.navbar__watchlist_tab, Icons.Default.Star, isEnabled = false),
     SETTINGS(Settings, Res.string.navbar__settings_tab, Icons.Default.Settings),
 }
 

@@ -50,6 +50,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private const val NAV_BAR_ITEM_INDICATOR_ALPHA = 0.16f
 private const val PAGER_UNSETTLED_SCALE = 0.96f
+private val enabledNavTabs = NavTab.entries.filter { it.isEnabled }
 
 @Composable
 internal fun MainScreen(
@@ -75,8 +76,8 @@ private fun MainScreen(
         configuration = navigationConfig,
         elements = arrayOf(Inventory),
     )
-    val pagerState = rememberPagerState(pageCount = { NavTab.entries.size })
-    val currentTab = NavTab.entries.first { it.destination == backStack.lastOrNull() }
+    val pagerState = rememberPagerState(pageCount = { enabledNavTabs.size })
+    val currentTab = enabledNavTabs.first { it.destination == backStack.lastOrNull() }
     var isFabVisible by remember { mutableStateOf(true) }
 
     SyncPagerWithBackStack(
@@ -117,7 +118,7 @@ private fun MainScreen(
                 ),
             )
 
-            NavTab.entries[page].ScreenContent(
+            enabledNavTabs[page].ScreenContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
@@ -149,7 +150,7 @@ private fun MainNavigationBar(backStack: NavBackStack<NavKey>) {
     NavigationBar(
         modifier = Modifier.testTag(MainScreen.Tag.NAV_BAR),
     ) {
-        NavTab.entries.forEach { tab ->
+        enabledNavTabs.forEach { tab ->
             val isSelected = backStack.lastOrNull() == tab.destination
 
             NavigationBarItem(
@@ -194,8 +195,8 @@ private fun SyncPagerWithBackStack(
     backStack: NavBackStack<NavKey>,
     pagerState: PagerState,
 ) {
-    val currentTab = NavTab.entries.first { it.destination == backStack.lastOrNull() }
-    val currentTabIndex = NavTab.entries.indexOf(currentTab)
+    val currentTab = enabledNavTabs.first { it.destination == backStack.lastOrNull() }
+    val currentTabIndex = enabledNavTabs.indexOf(currentTab)
 
     LaunchedEffect(currentTabIndex) {
         if (pagerState.targetPage != currentTabIndex) {
@@ -206,7 +207,7 @@ private fun SyncPagerWithBackStack(
     }
 
     LaunchedEffect(pagerState.settledPage) {
-        val settledDestination = NavTab.entries[pagerState.settledPage].destination
+        val settledDestination = enabledNavTabs[pagerState.settledPage].destination
         if (backStack.lastOrNull() != settledDestination) {
             backStack.clear()
             backStack.add(settledDestination)
