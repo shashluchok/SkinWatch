@@ -4,6 +4,9 @@ import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
+import com.shashluchok.skinwatch.domain.settings.ObserveSelectedCurrencyInteractor
+import com.shashluchok.skinwatch.domain.settings.SetSelectedCurrencyInteractor
+import com.shashluchok.skinwatch.domain.steam.GetDefaultCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.SearchMarketItemsInteractor
 import org.koin.dsl.module
@@ -26,4 +29,7 @@ internal val domainModule = module {
     single { UpdateInventoryItemInteractor(inventoryRepository = get(), resolveDisplayCurrency = get()) }
     single { RemoveInventoryItemInteractor(inventoryRepository = get()) }
     single { ObserveInventoryListInteractor(inventoryRepository = get(), priceSnapshotRepository = get()) }
+    single { ObserveSelectedCurrencyInteractor(settingsRepository = get()) }
+    single { SetSelectedCurrencyInteractor(settingsRepository = get()) }
+    single { GetDefaultCurrencyInteractor(steamMarketRepository = get()) }
 }

@@ -26,7 +26,13 @@
     <string name="dev__dialog_delete_item__confirm_button">Удалить</string>
     <string name="dev__dialog_delete_item__cancel_button">Отмена</string>
     <string name="dev__screen_watchlist__empty_state">Список отслеживания скоро появится</string>
-    <string name="dev__screen_settings__empty_state">Настройки скоро появятся</string>
+    <string name="dev__currency_label__usd">USD</string>
+    <string name="dev__currency_label__gbp">GBP</string>
+    <string name="dev__currency_label__eur">EUR</string>
+    <string name="dev__currency_label__rub">RUB</string>
+    <string name="dev__screen_settings__currency_row__title">Валюта</string>
+    <string name="dev__screen_settings__currency_picker__title">Валюта</string>
+    <string name="dev__screen_settings__currency_auto_option">Авто (%1$s)</string>
     <string name="navbar__inventory_tab">Инвентарь</string>
     <string name="navbar__watchlist_tab">Список</string>
     <string name="navbar__settings_tab">Настройки</string>

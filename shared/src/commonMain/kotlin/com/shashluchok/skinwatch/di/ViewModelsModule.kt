@@ -24,5 +24,11 @@ internal val viewModelModule = module {
         )
     }
     viewModel { WatchlistViewModel() }
-    viewModel { SettingsViewModel() }
+    viewModel {
+        SettingsViewModel(
+            observeSelectedCurrency = get(),
+            setSelectedCurrency = get(),
+            getDefaultCurrency = get(),
+        )
+    }
 }

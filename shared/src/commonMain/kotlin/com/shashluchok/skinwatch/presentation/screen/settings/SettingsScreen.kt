@@ -1,18 +1,21 @@
 package com.shashluchok.skinwatch.presentation.screen.settings
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheet
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
-import com.shashluchok.skinwatch.resources.dev__screen_settings__empty_state
+import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_auto_option
+import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_row__title
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -29,26 +32,55 @@ internal fun SettingsScreen(
     )
 }
 
-@Suppress("UnusedParameter")
 @Composable
 private fun SettingsScreen(
     state: SettingsViewModel.State,
     onAction: (SettingsViewModel.Action) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .testTag(SettingsScreen.Tag.ROOT),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            modifier = Modifier
-                .padding(horizontal = LocalDimens.current.padding.medium)
-                .testTag(SettingsScreen.Tag.EMPTY_STATE),
-            text = stringResource(Res.string.dev__screen_settings__empty_state),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+    val dimens = LocalDimens.current
+
+    Scaffold(modifier = modifier.testTag(SettingsScreen.Tag.ROOT)) { contentPadding ->
+        Column(modifier = Modifier.padding(contentPadding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAction(SettingsViewModel.Action.OnCurrencyRowClick) }
+                    .padding(dimens.padding.medium)
+                    .testTag(SettingsScreen.Tag.CURRENCY_ROW),
+            ) {
+                Text(
+                    text = stringResource(Res.string.dev__screen_settings__currency_row__title),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = state.currencyRowValue(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+
+    if (state.isCurrencyPickerVisible) {
+        CurrencyPickerBottomSheet(
+            selectedCurrency = state.selectedCurrency,
+            resolvedAutoCurrency = state.resolvedAutoCurrency,
+            onOptionSelect = { onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(it)) },
+            onDismiss = { onAction(SettingsViewModel.Action.OnDismissCurrencyPicker) },
+        )
+    }
+}
+
+@Composable
+private fun SettingsViewModel.State.currencyRowValue(): String {
+    val currency = selectedCurrency
+    return if (currency != null) {
+        stringResource(currencyLabel(currency))
+    } else {
+        stringResource(
+            Res.string.dev__screen_settings__currency_auto_option,
+            stringResource(currencyLabel(resolvedAutoCurrency)),
         )
     }
 }
@@ -56,6 +88,6 @@ private fun SettingsScreen(
 internal object SettingsScreen {
     object Tag {
         const val ROOT = "SettingsScreen"
-        const val EMPTY_STATE = "$ROOT.emptyState"
+        const val CURRENCY_ROW = "$ROOT.currencyRow"
     }
 }
