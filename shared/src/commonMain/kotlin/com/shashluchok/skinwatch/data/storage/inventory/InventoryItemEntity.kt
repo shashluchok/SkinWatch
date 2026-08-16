@@ -8,6 +8,7 @@ import kotlin.time.Instant
 internal data class InventoryItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val marketHashName: String,
+    val iconUrl: String,
     val addedAt: Instant,
     val quantity: Int,
     val purchasePriceMinorUnits: Long?,

@@ -17,12 +17,14 @@ internal class InventoryRepositoryImpl(
 
     override suspend fun addItem(
         marketHashName: String,
+        iconUrl: String,
         quantity: Int,
         purchasePrice: Money?,
         note: String?,
     ): Long = dao.insert(
         InventoryItemEntity(
             marketHashName = marketHashName,
+            iconUrl = iconUrl,
             addedAt = Clock.System.now(),
             quantity = quantity,
             purchasePriceMinorUnits = purchasePrice?.minorUnits,
@@ -35,6 +37,7 @@ internal class InventoryRepositoryImpl(
         InventoryItemEntity(
             id = item.id,
             marketHashName = item.marketHashName,
+            iconUrl = item.iconUrl,
             addedAt = item.addedAt,
             quantity = item.quantity,
             purchasePriceMinorUnits = item.purchasePrice?.minorUnits,
@@ -55,6 +58,7 @@ private fun InventoryItemEntity.toDomain(): InventoryItem {
     return InventoryItem(
         id = id,
         marketHashName = marketHashName,
+        iconUrl = iconUrl,
         addedAt = addedAt,
         quantity = quantity,
         purchasePrice = purchasePrice,

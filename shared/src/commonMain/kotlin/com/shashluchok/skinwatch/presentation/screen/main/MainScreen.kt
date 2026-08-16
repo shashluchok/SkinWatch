@@ -1,7 +1,12 @@
 package com.shashluchok.skinwatch.presentation.screen.main
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -13,9 +18,13 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
@@ -31,6 +40,8 @@ import com.shashluchok.skinwatch.presentation.navigation.destination.Inventory
 import com.shashluchok.skinwatch.presentation.navigation.navtab.GlowIcon
 import com.shashluchok.skinwatch.presentation.navigation.navtab.NavTab
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryScreen
+import com.shashluchok.skinwatch.presentation.screen.main.component.AddFab
+import com.shashluchok.skinwatch.presentation.screen.main.component.AddItemBottomSheet
 import com.shashluchok.skinwatch.presentation.screen.settings.SettingsScreen
 import com.shashluchok.skinwatch.presentation.screen.watchlist.WatchlistScreen
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
@@ -38,7 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val NAV_BAR_ITEM_INDICATOR_ALPHA = 0.16f
-private const val PAGER_UNSETTLED_SCALE = 0.9f
+private const val PAGER_UNSETTLED_SCALE = 0.96f
 
 @Composable
 internal fun MainScreen(
@@ -65,6 +76,8 @@ private fun MainScreen(
         elements = arrayOf(Inventory),
     )
     val pagerState = rememberPagerState(pageCount = { NavTab.entries.size })
+    val currentTab = NavTab.entries.first { it.destination == backStack.lastOrNull() }
+    var isFabVisible by remember { mutableStateOf(true) }
 
     SyncPagerWithBackStack(
         backStack = backStack,
@@ -74,34 +87,18 @@ private fun MainScreen(
 
     Scaffold(
         modifier = modifier.testTag(MainScreen.Tag.ROOT),
-        bottomBar = {
-            NavigationBar(
-                modifier = Modifier.testTag(MainScreen.Tag.NAV_BAR),
-            ) {
-                NavTab.entries.forEach { tab ->
-                    val isSelected = backStack.lastOrNull() == tab.destination
-
-                    NavigationBarItem(
-                        modifier = Modifier.testTag(MainScreen.Tag.navBarItem(tab)),
-                        selected = isSelected,
-                        onClick = {
-                            if (!isSelected) {
-                                backStack.clear()
-                                backStack.add(tab.destination)
-                            }
-                        },
-                        icon = { tab.GlowIcon(isSelected = isSelected) },
-                        label = { Text(text = stringResource(tab.labelRes)) },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = MaterialTheme.colorScheme.primary.copy(
-                                alpha = NAV_BAR_ITEM_INDICATOR_ALPHA,
-                            ),
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-                }
-            }
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.testTag(MainScreen.Tag.TOP_BAR),
+                title = { Text(text = stringResource(currentTab.labelRes)) },
+            )
+        },
+        bottomBar = { MainNavigationBar(backStack = backStack) },
+        floatingActionButton = {
+            MainFab(
+                visible = currentTab == NavTab.INVENTORY && isFabVisible,
+                onClick = { onAction(MainViewModel.Action.OnAddClick) },
+            )
         },
     ) { contentPadding ->
         val motion = LocalMotion.current
@@ -116,7 +113,7 @@ private fun MainScreen(
             val scale by animateFloatAsState(
                 targetValue = if (isSettledActive) 1f else PAGER_UNSETTLED_SCALE,
                 animationSpec = tween(
-                    durationMillis = if (isSettledActive) motion.duration.standard else 0,
+                    durationMillis = if (isSettledActive) motion.duration.standard else motion.duration.instant,
                 ),
             )
 
@@ -127,8 +124,68 @@ private fun MainScreen(
                         scaleX = scale
                         scaleY = scale
                     },
+                onAddVisibilityChange = { isFabVisible = it },
             )
         }
+    }
+
+    state.addSheet?.let { sheet ->
+        AddItemBottomSheet(
+            sheet = sheet,
+            onQueryChange = { onAction(MainViewModel.Action.OnSearchQueryChanged(it)) },
+            onResultSelect = { onAction(MainViewModel.Action.OnSearchResultSelected(it)) },
+            onBackClick = { onAction(MainViewModel.Action.OnAddDetailsBackClick) },
+            onQuantityChange = { onAction(MainViewModel.Action.OnQuantityChanged(it)) },
+            onPurchasePriceChange = { onAction(MainViewModel.Action.OnPurchasePriceChanged(it)) },
+            onNoteChange = { onAction(MainViewModel.Action.OnNoteChanged(it)) },
+            onSaveClick = { onAction(MainViewModel.Action.OnSaveClick) },
+            onDismiss = { onAction(MainViewModel.Action.OnDismissSheet) },
+        )
+    }
+}
+
+@Composable
+private fun MainNavigationBar(backStack: NavBackStack<NavKey>) {
+    NavigationBar(
+        modifier = Modifier.testTag(MainScreen.Tag.NAV_BAR),
+    ) {
+        NavTab.entries.forEach { tab ->
+            val isSelected = backStack.lastOrNull() == tab.destination
+
+            NavigationBarItem(
+                modifier = Modifier.testTag(MainScreen.Tag.navBarItem(tab)),
+                selected = isSelected,
+                onClick = {
+                    if (!isSelected) {
+                        backStack.clear()
+                        backStack.add(tab.destination)
+                    }
+                },
+                icon = { tab.GlowIcon(isSelected = isSelected) },
+                label = { Text(text = stringResource(tab.labelRes)) },
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(
+                        alpha = NAV_BAR_ITEM_INDICATOR_ALPHA,
+                    ),
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainFab(
+    visible: Boolean,
+    onClick: () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = scaleIn() + fadeIn(),
+        exit = scaleOut() + fadeOut(),
+    ) {
+        AddFab(onClick = onClick)
     }
 }
 
@@ -172,9 +229,12 @@ private fun NavigateToInventoryOnBack(backStack: NavBackStack<NavKey>) {
 }
 
 @Composable
-private fun NavTab.ScreenContent(modifier: Modifier = Modifier) {
+private fun NavTab.ScreenContent(
+    modifier: Modifier = Modifier,
+    onAddVisibilityChange: (Boolean) -> Unit = {},
+) {
     when (this) {
-        NavTab.INVENTORY -> InventoryScreen(modifier = modifier)
+        NavTab.INVENTORY -> InventoryScreen(modifier = modifier, onScrollingUp = onAddVisibilityChange)
         NavTab.WATCHLIST -> WatchlistScreen(modifier = modifier)
         NavTab.SETTINGS -> SettingsScreen(modifier = modifier)
     }
@@ -183,6 +243,7 @@ private fun NavTab.ScreenContent(modifier: Modifier = Modifier) {
 internal object MainScreen {
     object Tag {
         const val ROOT = "MainScreen"
+        const val TOP_BAR = "$ROOT.topBar"
         const val NAV_BAR = "$ROOT.navBar"
 
         fun navBarItem(tab: NavTab) = when (tab) {

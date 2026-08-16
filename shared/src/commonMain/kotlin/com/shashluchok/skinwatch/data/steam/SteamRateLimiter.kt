@@ -8,12 +8,12 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
-internal enum class SteamEndpoint { SEARCH, PRICE_OVERVIEW }
-
 // Valve does not publish official numbers; 8s is a community-documented safe minimum for
 // priceoverview. search/render has no separately documented figure, so the same
 // conservative interval is used for it too.
 private val MIN_INTERVAL_PER_ENDPOINT = 8.seconds
+
+internal enum class SteamEndpoint { SEARCH, PRICE_OVERVIEW }
 
 private fun defaultMinInterval(endpoint: SteamEndpoint): Duration = when (endpoint) {
     SteamEndpoint.SEARCH, SteamEndpoint.PRICE_OVERVIEW -> MIN_INTERVAL_PER_ENDPOINT

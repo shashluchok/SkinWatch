@@ -10,8 +10,19 @@ import org.koin.dsl.module
 
 internal val viewModelModule = module {
     viewModel { SplashViewModel() }
-    viewModel { MainViewModel() }
-    viewModel { InventoryViewModel() }
+    viewModel {
+        MainViewModel(
+            searchMarketItems = get(),
+            addInventoryItem = get(),
+        )
+    }
+    viewModel {
+        InventoryViewModel(
+            observeInventoryList = get(),
+            updateInventoryItem = get(),
+            removeInventoryItem = get(),
+        )
+    }
     viewModel { WatchlistViewModel() }
     viewModel { SettingsViewModel() }
 }

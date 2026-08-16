@@ -39,6 +39,9 @@ kotlinx-serialization = "1.11.0"
 # Animation
 compottie = "2.2.4"
 
+# Images
+coil = "3.5.0"
+
 # DI
 koin = "4.2.2"
 
@@ -63,6 +66,7 @@ androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle
 
 # Compose
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+compose-animation = { module = "org.jetbrains.compose.animation:animation", version.ref = "composeMultiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
@@ -88,6 +92,10 @@ navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui",
 
 # Animation
 compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "compottie" }
+
+# Images
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-networkKtor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
 # Networking
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

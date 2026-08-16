@@ -8,6 +8,7 @@ internal interface InventoryRepository {
 
     suspend fun addItem(
         marketHashName: String,
+        iconUrl: String,
         quantity: Int,
         purchasePrice: Money?,
         note: String?,

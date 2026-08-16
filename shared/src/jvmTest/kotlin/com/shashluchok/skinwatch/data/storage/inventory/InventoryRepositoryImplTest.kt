@@ -26,6 +26,7 @@ class InventoryRepositoryImplTest {
 
         val id = repository.addItem(
             marketHashName = "AK-47 | Redline (Field-Tested)",
+            iconUrl = "https://example.com/ak47-redline.png",
             quantity = 2,
             purchasePrice = Money(minorUnits = 1234, currency = SteamCurrency.USD),
             note = "bought on sale",
@@ -35,6 +36,7 @@ class InventoryRepositoryImplTest {
         val item = items.single()
         assertEquals(id, item.id)
         assertEquals("AK-47 | Redline (Field-Tested)", item.marketHashName)
+        assertEquals("https://example.com/ak47-redline.png", item.iconUrl)
         assertEquals(2, item.quantity)
         assertEquals(Money(minorUnits = 1234, currency = SteamCurrency.USD), item.purchasePrice)
         assertEquals("bought on sale", item.note)
@@ -44,7 +46,13 @@ class InventoryRepositoryImplTest {
     fun `addItem with no purchase price stores a null Money`() = runTest {
         val repository = newRepository()
 
-        repository.addItem(marketHashName = "P250 | Sand Dune", quantity = 1, purchasePrice = null, note = null)
+        repository.addItem(
+            marketHashName = "P250 | Sand Dune",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = null,
+            note = null,
+        )
 
         val item = repository.observeItems().first().single()
         assertEquals(null, item.purchasePrice)
@@ -56,6 +64,7 @@ class InventoryRepositoryImplTest {
         val repository = newRepository()
         val id = repository.addItem(
             marketHashName = "AWP | Asiimov (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
             quantity = 1,
             purchasePrice = null,
             note = null,
@@ -75,6 +84,7 @@ class InventoryRepositoryImplTest {
         val repository = newRepository()
         val id = repository.addItem(
             marketHashName = "USP-S | Kill Confirmed",
+            iconUrl = "https://example.com/icon.png",
             quantity = 1,
             purchasePrice = null,
             note = null,
