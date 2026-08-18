@@ -8,6 +8,8 @@ import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
+import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
+import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
@@ -16,24 +18,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlin.time.Instant
 
 internal class InventoryViewModel(
     private val observeInventoryList: ObserveInventoryListInteractor,
     private val updateInventoryItem: UpdateInventoryItemInteractor,
     private val removeInventoryItem: RemoveInventoryItemInteractor,
     private val observePriceHistory: ObservePriceHistoryInteractor,
+    private val syncPriceSnapshots: SyncPriceSnapshotsInteractor,
+    private val observeLastSyncedAt: ObserveLastSyncedAtInteractor,
 ) : BaseViewModel<InventoryViewModel.State, InventoryViewModel.Action>() {
     data class State(
         val items: List<InventoryListItem> = emptyList(),
         val editSheet: EditSheetState? = null,
         val priceHistorySheet: PriceHistorySheetState? = null,
+        val lastSyncedAt: Instant? = null,
+        val isSyncing: Boolean = false,
     )
 
     data class EditSheetState(
         val item: InventoryItem,
         val quantity: String,
         val purchasePrice: String,
-        val note: String,
         val validationError: ValidationError? = null,
         val showDeleteConfirmation: Boolean = false,
     )
@@ -57,10 +63,6 @@ internal class InventoryViewModel(
             val value: String,
         ) : Action
 
-        data class OnNoteChanged(
-            val value: String,
-        ) : Action
-
         data object OnSaveClick : Action
 
         data object OnDeleteClick : Action
@@ -72,6 +74,8 @@ internal class InventoryViewModel(
         data object OnDismissSheet : Action
 
         data object OnDismissPriceHistorySheet : Action
+
+        data object OnSyncNowClick : Action
     }
 
     override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
@@ -80,6 +84,12 @@ internal class InventoryViewModel(
 
     init {
         observeInventoryList().onEach { items -> state = state.copy(items = items) }.launchIn(viewModelScope)
+        observeLastSyncedAt()
+            .onEach { lastSyncedAt -> state = state.copy(lastSyncedAt = lastSyncedAt) }
+            .launchIn(viewModelScope)
+        syncPriceSnapshots.isSyncing
+            .onEach { isSyncing -> state = state.copy(isSyncing = isSyncing) }
+            .launchIn(viewModelScope)
     }
 
     override fun onAction(action: Action) {
@@ -87,13 +97,13 @@ internal class InventoryViewModel(
             is Action.OnItemClick -> onItemClick(action.item)
             is Action.OnQuantityChanged -> onQuantityChanged(action.value)
             is Action.OnPurchasePriceChanged -> onPurchasePriceChanged(action.value)
-            is Action.OnNoteChanged -> onNoteChanged(action.value)
             Action.OnSaveClick -> onSaveClick()
             Action.OnDeleteClick -> onDeleteClick()
             Action.OnDeleteConfirmed -> onDeleteConfirmed()
             Action.OnDeleteCancelled -> onDeleteCancelled()
             Action.OnDismissSheet -> onDismissSheet()
             Action.OnDismissPriceHistorySheet -> onDismissPriceHistorySheet()
+            Action.OnSyncNowClick -> onSyncNowClick()
         }
     }
 
@@ -121,6 +131,14 @@ internal class InventoryViewModel(
         state = state.copy(priceHistorySheet = null)
     }
 
+    /**
+     * A tap during an already-in-flight run is safe -- [SyncPriceSnapshotsInteractor]'s own mutex
+     * makes the second call a no-op, so no extra guard is needed here.
+     */
+    private fun onSyncNowClick() {
+        viewModelScope.launch { syncPriceSnapshots() }
+    }
+
     private fun onDismissSheet() {
         state = state.copy(editSheet = null)
     }
@@ -138,10 +156,6 @@ internal class InventoryViewModel(
         updateSheet { it.copy(purchasePrice = value, validationError = null) }
     }
 
-    private fun onNoteChanged(value: String) {
-        updateSheet { it.copy(note = value) }
-    }
-
     private fun onSaveClick() {
         val sheet = state.editSheet ?: return
         saveEditedItem(sheet)
@@ -153,19 +167,13 @@ internal class InventoryViewModel(
             state = state.copy(editSheet = sheet.copy(validationError = ValidationError.INVALID_QUANTITY))
             return
         }
-        val hasPriceInput = sheet.purchasePrice.isNotBlank()
         val amount = sheet.purchasePrice.toValidatedAmountOrNull()
-        if (hasPriceInput && amount == null) {
+        if (amount == null) {
             state = state.copy(editSheet = sheet.copy(validationError = ValidationError.INVALID_PRICE))
             return
         }
         viewModelScope.launch {
-            updateInventoryItem(
-                item = sheet.item,
-                quantity = quantity,
-                purchasePriceAmount = amount,
-                note = sheet.note.ifBlank { null },
-            )
+            updateInventoryItem(item = sheet.item, quantity = quantity, purchasePriceAmount = amount)
             state = state.copy(editSheet = null)
         }
     }

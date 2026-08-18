@@ -13,7 +13,6 @@ internal class SettingsRepositoryImpl(
     override val selectedCurrency: Flow<SteamCurrency?> =
         dao.observe().map { entity -> entity?.selectedCurrencyId?.let(::idToSteamCurrency) }
 
-    override suspend fun setSelectedCurrency(currency: SteamCurrency?) = dao.upsert(
-        SettingsEntity(selectedCurrencyId = currency?.let(::steamCurrencyToId)),
-    )
+    override suspend fun setSelectedCurrency(currency: SteamCurrency?) =
+        dao.upsert(SettingsEntity(selectedCurrencyId = currency?.let(::steamCurrencyToId)))
 }

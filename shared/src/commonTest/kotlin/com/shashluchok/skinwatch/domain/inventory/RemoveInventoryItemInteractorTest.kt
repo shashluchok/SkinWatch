@@ -1,5 +1,7 @@
 package com.shashluchok.skinwatch.domain.inventory
 
+import com.shashluchok.skinwatch.domain.steam.Money
+import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,8 +14,7 @@ class RemoveInventoryItemInteractorTest {
             marketHashName = "AK-47 | Redline (Field-Tested)",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
         val interactor = RemoveInventoryItemInteractor(inventoryRepository = inventoryRepository)
 

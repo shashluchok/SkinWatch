@@ -211,6 +211,21 @@ class MainViewModelTest {
     }
 
     @Test
+    fun `a blank purchase price blocks save and sets a validation error`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        viewModel.onAction(MainViewModel.Action.OnAddClick)
+        viewModel.onAction(MainViewModel.Action.OnSearchResultSelected(sampleSearchResult()))
+
+        viewModel.onAction(MainViewModel.Action.OnSaveClick)
+        dispatcher.scheduler.runCurrent()
+
+        val sheet = viewModel.stateFlow.value.addSheet
+        check(sheet is MainViewModel.AddSheetState.AddDetails)
+        assertEquals(ValidationError.INVALID_PRICE, sheet.validationError)
+        assertEquals(emptyList(), inventoryRepository.observeItems().value)
+    }
+
+    @Test
     fun `saving with valid fields adds the item, records a snapshot on success, and closes the sheet`() =
         runTest(dispatcher) {
             val viewModel = newViewModel()
@@ -225,7 +240,6 @@ class MainViewModelTest {
             viewModel.onAction(MainViewModel.Action.OnSearchResultSelected(sampleSearchResult()))
             viewModel.onAction(MainViewModel.Action.OnQuantityChanged("2"))
             viewModel.onAction(MainViewModel.Action.OnPurchasePriceChanged("12.50"))
-            viewModel.onAction(MainViewModel.Action.OnNoteChanged("bought on sale"))
 
             viewModel.onAction(MainViewModel.Action.OnSaveClick)
             dispatcher.scheduler.runCurrent()
@@ -234,7 +248,6 @@ class MainViewModelTest {
             assertEquals(sampleSearchResult().marketHashName, added.marketHashName)
             assertEquals(2, added.quantity)
             assertEquals(Money(minorUnits = 1250, currency = SteamCurrency.USD), added.purchasePrice)
-            assertEquals("bought on sale", added.note)
             val recorded = priceSnapshotRepository.recorded.single()
             assertEquals(Money(minorUnits = 4900, currency = SteamCurrency.USD), recorded.lowestPrice)
             assertNull(viewModel.stateFlow.value.addSheet)
@@ -246,6 +259,7 @@ class MainViewModelTest {
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
         viewModel.onAction(MainViewModel.Action.OnAddClick)
         viewModel.onAction(MainViewModel.Action.OnSearchResultSelected(sampleSearchResult()))
+        viewModel.onAction(MainViewModel.Action.OnPurchasePriceChanged("12.50"))
 
         viewModel.onAction(MainViewModel.Action.OnSaveClick)
         dispatcher.scheduler.runCurrent()

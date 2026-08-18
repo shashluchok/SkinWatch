@@ -3,6 +3,7 @@ package com.shashluchok.skinwatch.domain.pricesnapshot
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlin.time.Instant
 
 internal interface PriceSnapshotRepository {
@@ -22,4 +23,17 @@ internal interface PriceSnapshotRepository {
     )
 
     fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>>
+
+    companion object {
+        val EMPTY = object : PriceSnapshotRepository {
+            override suspend fun record(
+                marketHashName: String,
+                overview: SteamPriceOverview,
+                currency: SteamCurrency,
+                capturedAt: Instant,
+            ) = Unit
+
+            override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> = flowOf(emptyList())
+        }
+    }
 }

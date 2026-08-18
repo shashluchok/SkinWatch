@@ -43,7 +43,6 @@ internal fun AddItemBottomSheet(
     onBackClick: () -> Unit,
     onQuantityChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
-    onNoteChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -69,7 +68,6 @@ internal fun AddItemBottomSheet(
                     onBackClick = onBackClick,
                     onQuantityChange = onQuantityChange,
                     onPurchasePriceChange = onPurchasePriceChange,
-                    onNoteChange = onNoteChange,
                     onSaveClick = onSaveClick,
                 )
             }
@@ -151,7 +149,6 @@ private fun AddDetailsStep(
     onBackClick: () -> Unit,
     onQuantityChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
-    onNoteChange: (String) -> Unit,
     onSaveClick: () -> Unit,
 ) {
     val dimens = LocalDimens.current
@@ -171,11 +168,9 @@ private fun AddDetailsStep(
         ItemDetailsForm(
             quantity = sheet.quantity,
             purchasePrice = sheet.purchasePrice,
-            note = sheet.note,
             validationError = sheet.validationError,
             onQuantityChange = onQuantityChange,
             onPurchasePriceChange = onPurchasePriceChange,
-            onNoteChange = onNoteChange,
         )
         Button(
             modifier = Modifier

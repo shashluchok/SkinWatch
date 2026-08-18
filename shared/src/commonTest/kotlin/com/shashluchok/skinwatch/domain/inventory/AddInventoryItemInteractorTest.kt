@@ -12,7 +12,6 @@ import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class AddInventoryItemInteractorTest {
     private val inventoryRepository = FakeInventoryRepository()
@@ -36,28 +35,12 @@ class AddInventoryItemInteractorTest {
             iconUrl = "https://example.com/icon.png",
             quantity = 2,
             purchasePriceAmount = 12.5,
-            note = "bought on sale",
         )
 
         val added = inventoryRepository.observeItems().value.single()
         assertEquals("AK-47 | Redline (Field-Tested)", added.marketHashName)
         assertEquals(2, added.quantity)
         assertEquals(Money(minorUnits = 1250, currency = SteamCurrency.USD), added.purchasePrice)
-        assertEquals("bought on sale", added.note)
-    }
-
-    @Test
-    fun `adds the item with a null purchase price when no amount is given`() = runTest {
-        interactor(
-            marketHashName = "Item",
-            iconUrl = "https://example.com/icon.png",
-            quantity = 1,
-            purchasePriceAmount = null,
-            note = null,
-        )
-
-        val added = inventoryRepository.observeItems().value.single()
-        assertNull(added.purchasePrice)
     }
 
     @Test
@@ -74,8 +57,7 @@ class AddInventoryItemInteractorTest {
             marketHashName = "Item",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePriceAmount = null,
-            note = null,
+            purchasePriceAmount = 5.0,
         )
 
         val recorded = priceSnapshotRepository.recorded.single()
@@ -90,8 +72,7 @@ class AddInventoryItemInteractorTest {
             marketHashName = "Item",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePriceAmount = null,
-            note = null,
+            purchasePriceAmount = 5.0,
         )
 
         assertEquals(1, inventoryRepository.observeItems().value.size)

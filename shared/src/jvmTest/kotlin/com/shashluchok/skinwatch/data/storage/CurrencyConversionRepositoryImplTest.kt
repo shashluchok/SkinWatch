@@ -63,7 +63,6 @@ class CurrencyConversionRepositoryImplTest {
                     quantity = 1,
                     purchasePriceMinorUnits = 10000,
                     purchasePriceCurrencyId = SteamCurrency.USD.id,
-                    note = null,
                 ),
             )
             database.priceSnapshotDao().insert(
@@ -109,7 +108,6 @@ class CurrencyConversionRepositoryImplTest {
                 quantity = 1,
                 purchasePriceMinorUnits = 500,
                 purchasePriceCurrencyId = SteamCurrency.EUR.id,
-                note = null,
             ),
         )
         val repository = newRepository(database)
@@ -136,7 +134,6 @@ class CurrencyConversionRepositoryImplTest {
                 quantity = 1,
                 purchasePriceMinorUnits = 10000,
                 purchasePriceCurrencyId = SteamCurrency.USD.id,
-                note = null,
             ),
         )
         val repository = newRepository(database)

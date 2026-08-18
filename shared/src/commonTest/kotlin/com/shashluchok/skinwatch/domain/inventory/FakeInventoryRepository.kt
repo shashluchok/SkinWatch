@@ -17,8 +17,7 @@ internal class FakeInventoryRepository : InventoryRepository {
         marketHashName: String,
         iconUrl: String,
         quantity: Int,
-        purchasePrice: Money?,
-        note: String?,
+        purchasePrice: Money,
     ): Long {
         val id = nextId++
         itemsFlow.value = itemsFlow.value + InventoryItem(
@@ -28,7 +27,6 @@ internal class FakeInventoryRepository : InventoryRepository {
             addedAt = Instant.fromEpochMilliseconds(0),
             quantity = quantity,
             purchasePrice = purchasePrice,
-            note = note,
         )
         return id
     }
@@ -42,4 +40,7 @@ internal class FakeInventoryRepository : InventoryRepository {
         removedIds += id
         itemsFlow.value = itemsFlow.value.filterNot { it.id == id }
     }
+
+    override suspend fun getDistinctMarketHashNames(): List<String> =
+        itemsFlow.value.map { it.marketHashName }.distinct()
 }

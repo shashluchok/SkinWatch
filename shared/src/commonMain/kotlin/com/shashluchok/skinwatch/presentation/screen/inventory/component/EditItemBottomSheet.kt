@@ -25,7 +25,6 @@ internal fun EditItemBottomSheet(
     sheet: InventoryViewModel.EditSheetState,
     onQuantityChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
-    onNoteChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onDeleteConfirm: () -> Unit,
@@ -48,11 +47,9 @@ internal fun EditItemBottomSheet(
             ItemDetailsForm(
                 quantity = sheet.quantity,
                 purchasePrice = sheet.purchasePrice,
-                note = sheet.note,
                 validationError = sheet.validationError,
                 onQuantityChange = onQuantityChange,
                 onPurchasePriceChange = onPurchasePriceChange,
-                onNoteChange = onNoteChange,
             )
             Button(
                 modifier = Modifier

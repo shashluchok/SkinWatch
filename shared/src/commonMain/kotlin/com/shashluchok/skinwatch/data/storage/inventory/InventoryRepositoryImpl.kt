@@ -19,17 +19,15 @@ internal class InventoryRepositoryImpl(
         marketHashName: String,
         iconUrl: String,
         quantity: Int,
-        purchasePrice: Money?,
-        note: String?,
+        purchasePrice: Money,
     ): Long = dao.insert(
         InventoryItemEntity(
             marketHashName = marketHashName,
             iconUrl = iconUrl,
             addedAt = Clock.System.now(),
             quantity = quantity,
-            purchasePriceMinorUnits = purchasePrice?.minorUnits,
-            purchasePriceCurrencyId = purchasePrice?.currency?.let(::steamCurrencyToId),
-            note = note,
+            purchasePriceMinorUnits = purchasePrice.minorUnits,
+            purchasePriceCurrencyId = steamCurrencyToId(purchasePrice.currency),
         ),
     )
 
@@ -40,28 +38,21 @@ internal class InventoryRepositoryImpl(
             iconUrl = item.iconUrl,
             addedAt = item.addedAt,
             quantity = item.quantity,
-            purchasePriceMinorUnits = item.purchasePrice?.minorUnits,
-            purchasePriceCurrencyId = item.purchasePrice?.currency?.let(::steamCurrencyToId),
-            note = item.note,
+            purchasePriceMinorUnits = item.purchasePrice.minorUnits,
+            purchasePriceCurrencyId = steamCurrencyToId(item.purchasePrice.currency),
         ),
     )
 
     override suspend fun removeItem(id: Long) = dao.deleteById(id)
+
+    override suspend fun getDistinctMarketHashNames(): List<String> = dao.getDistinctMarketHashNames()
 }
 
-private fun InventoryItemEntity.toDomain(): InventoryItem {
-    val purchasePrice = if (purchasePriceMinorUnits != null && purchasePriceCurrencyId != null) {
-        Money(minorUnits = purchasePriceMinorUnits, currency = idToSteamCurrency(purchasePriceCurrencyId))
-    } else {
-        null
-    }
-    return InventoryItem(
-        id = id,
-        marketHashName = marketHashName,
-        iconUrl = iconUrl,
-        addedAt = addedAt,
-        quantity = quantity,
-        purchasePrice = purchasePrice,
-        note = note,
-    )
-}
+private fun InventoryItemEntity.toDomain(): InventoryItem = InventoryItem(
+    id = id,
+    marketHashName = marketHashName,
+    iconUrl = iconUrl,
+    addedAt = addedAt,
+    quantity = quantity,
+    purchasePrice = Money(minorUnits = purchasePriceMinorUnits, currency = idToSteamCurrency(purchasePriceCurrencyId)),
+)

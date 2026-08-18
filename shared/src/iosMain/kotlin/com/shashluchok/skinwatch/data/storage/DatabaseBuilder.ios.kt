@@ -9,7 +9,7 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
 
 @OptIn(ExperimentalForeignApi::class)
-fun createRoomDatabase(): AppDatabase {
+internal fun createRoomDatabase(): AppDatabase {
     val documentsDirectory = NSFileManager.defaultManager.URLForDirectory(
         directory = NSDocumentDirectory,
         inDomain = NSUserDomainMask,

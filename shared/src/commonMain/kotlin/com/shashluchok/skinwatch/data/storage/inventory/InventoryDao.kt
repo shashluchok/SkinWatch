@@ -28,4 +28,7 @@ internal interface InventoryDao {
 
     @Update
     suspend fun updateAll(entities: List<InventoryItemEntity>)
+
+    @Query("SELECT DISTINCT marketHashName FROM InventoryItem")
+    suspend fun getDistinctMarketHashNames(): List<String>
 }

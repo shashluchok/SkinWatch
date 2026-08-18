@@ -11,7 +11,6 @@ internal data class InventoryItemEntity(
     val iconUrl: String,
     val addedAt: Instant,
     val quantity: Int,
-    val purchasePriceMinorUnits: Long?,
-    val purchasePriceCurrencyId: Int?,
-    val note: String?,
+    val purchasePriceMinorUnits: Long,
+    val purchasePriceCurrencyId: Int,
 )

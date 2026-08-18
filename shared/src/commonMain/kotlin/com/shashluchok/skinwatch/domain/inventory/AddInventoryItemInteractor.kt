@@ -18,19 +18,18 @@ internal class AddInventoryItemInteractor(
         marketHashName: String,
         iconUrl: String,
         quantity: Int,
-        purchasePriceAmount: Double?,
-        note: String?,
+        purchasePriceAmount: Double,
     ) {
         val currency = resolveDisplayCurrency()
-        val purchasePrice = purchasePriceAmount?.let {
-            Money(minorUnits = (it * MINOR_UNITS_PER_MAJOR_UNIT).roundToLong(), currency = currency)
-        }
+        val purchasePrice = Money(
+            minorUnits = (purchasePriceAmount * MINOR_UNITS_PER_MAJOR_UNIT).roundToLong(),
+            currency = currency,
+        )
         inventoryRepository.addItem(
             marketHashName = marketHashName,
             iconUrl = iconUrl,
             quantity = quantity,
             purchasePrice = purchasePrice,
-            note = note,
         )
         val overview = steamMarketRepository.getPriceOverview(marketHashName = marketHashName, currency = currency)
         if (overview is SteamMarketResult.Success) {

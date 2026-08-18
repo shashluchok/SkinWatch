@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
-import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__note_label
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__price_error
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__purchase_price_label
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__quantity_error
@@ -22,18 +21,16 @@ internal enum class ValidationError { INVALID_QUANTITY, INVALID_PRICE }
 
 /**
  * Shared by the add-flow's details step (`MainScreen`) and the edit sheet (`InventoryScreen`) --
- * both edit the same three fields with the same copy (only quantity/purchasePrice/note are ever
- * editable from this screen).
+ * both edit the same two fields with the same copy (only quantity/purchasePrice are ever editable
+ * from this screen).
  */
 @Composable
 internal fun ItemDetailsForm(
     quantity: String,
     purchasePrice: String,
-    note: String,
     validationError: ValidationError?,
     onQuantityChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
-    onNoteChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
@@ -66,14 +63,6 @@ internal fun ItemDetailsForm(
                     Text(text = stringResource(Res.string.dev__screen_inventory__item_form__price_error))
                 }
             },
-        )
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimens.padding.small),
-            value = note,
-            onValueChange = onNoteChange,
-            label = { Text(text = stringResource(Res.string.dev__screen_inventory__item_form__note_label)) },
         )
     }
 }

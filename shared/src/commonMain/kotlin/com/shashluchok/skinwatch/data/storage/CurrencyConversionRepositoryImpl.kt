@@ -56,12 +56,8 @@ private fun InventoryItemEntity.convert(
     rates: Map<SteamCurrency, Double>,
     targetCurrency: SteamCurrency,
 ): InventoryItemEntity {
-    val minorUnits = purchasePriceMinorUnits
-    val currencyId = purchasePriceCurrencyId
-    if (minorUnits == null || currencyId == null) return this
-
     val converted = convertMoney(
-        money = Money(minorUnits = minorUnits, currency = idToSteamCurrency(currencyId)),
+        money = Money(minorUnits = purchasePriceMinorUnits, currency = idToSteamCurrency(purchasePriceCurrencyId)),
         targetCurrency = targetCurrency,
         targetPerUnitRates = rates,
     )

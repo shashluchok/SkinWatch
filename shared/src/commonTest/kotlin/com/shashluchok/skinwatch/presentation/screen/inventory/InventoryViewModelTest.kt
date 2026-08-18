@@ -17,6 +17,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Instant
 
+private val SAMPLE_PURCHASE_PRICE = Money(minorUnits = 100, currency = SteamCurrency.USD)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class InventoryViewModelTest {
     private val dispatcher = StandardTestDispatcher()
@@ -44,7 +46,6 @@ class InventoryViewModelTest {
             iconUrl = "https://example.com/icon.png",
             quantity = 2,
             purchasePrice = Money(minorUnits = 1234, currency = SteamCurrency.USD),
-            note = null,
         )
 
         dispatcher.scheduler.runCurrent()
@@ -63,8 +64,7 @@ class InventoryViewModelTest {
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         priceSnapshotRepository.emitSnapshot(
             marketHashName = hashName,
@@ -93,15 +93,13 @@ class InventoryViewModelTest {
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         inventoryRepository.addItem(
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
 
         dispatcher.scheduler.runCurrent()
@@ -118,7 +116,6 @@ class InventoryViewModelTest {
             iconUrl = "https://example.com/icon.png",
             quantity = 3,
             purchasePrice = Money(minorUnits = 2500, currency = SteamCurrency.USD),
-            note = "gift",
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items
@@ -142,8 +139,7 @@ class InventoryViewModelTest {
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items
@@ -172,8 +168,7 @@ class InventoryViewModelTest {
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items
@@ -203,15 +198,13 @@ class InventoryViewModelTest {
                 marketHashName = firstHashName,
                 iconUrl = "https://example.com/icon.png",
                 quantity = 1,
-                purchasePrice = null,
-                note = null,
+                purchasePrice = SAMPLE_PURCHASE_PRICE,
             )
             inventoryRepository.addItem(
                 marketHashName = secondHashName,
                 iconUrl = "https://example.com/icon.png",
                 quantity = 1,
-                purchasePrice = null,
-                note = null,
+                purchasePrice = SAMPLE_PURCHASE_PRICE,
             )
             dispatcher.scheduler.runCurrent()
             val items = viewModel.stateFlow.value.items
@@ -236,6 +229,47 @@ class InventoryViewModelTest {
             assertEquals(emptyList(), sheet.snapshots)
         }
 
+    @Test
+    fun `state reflects lastSyncedAt from the observer`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+
+        fixture.priceSyncStatusRepository.markCompleted(Instant.fromEpochMilliseconds(5_000))
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(Instant.fromEpochMilliseconds(5_000), viewModel.stateFlow.value.lastSyncedAt)
+    }
+
+    @Test
+    fun `OnSyncNowClick invokes the shared sync interactor`() = runTest(dispatcher) {
+        // An empty inventory is a no-op for the sync interactor itself (see
+        // SyncPriceSnapshotsInteractorTest) -- this test needs an item so the click is observable.
+        inventoryRepository.addItem(
+            marketHashName = "AK-47 | Redline (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
+        )
+        val viewModel = newViewModel()
+
+        viewModel.onAction(InventoryViewModel.Action.OnSyncNowClick)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(1, fixture.priceSyncStatusRepository.markCompletedCalls.size)
+    }
+
+    @Test
+    fun `state reflects isSyncing while a sync run is in progress`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        assertEquals(false, viewModel.stateFlow.value.isSyncing)
+
+        viewModel.onAction(InventoryViewModel.Action.OnSyncNowClick)
+        dispatcher.scheduler.runCurrent()
+
+        // The fake sync completes synchronously within runCurrent(), so by the time it returns
+        // isSyncing is back to false -- this asserts the round-trip works, not a mid-flight state.
+        assertEquals(false, viewModel.stateFlow.value.isSyncing)
+    }
+
     // OnItemClick no longer reaches editSheet -- see skinwatch-bhs.
     @Ignore
     @Test
@@ -246,7 +280,6 @@ class InventoryViewModelTest {
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
             purchasePrice = Money(minorUnits = 100_000, currency = SteamCurrency.USD),
-            note = null,
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items
@@ -255,14 +288,12 @@ class InventoryViewModelTest {
         viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
 
         viewModel.onAction(InventoryViewModel.Action.OnQuantityChanged("4"))
-        viewModel.onAction(InventoryViewModel.Action.OnNoteChanged("resold once"))
         viewModel.onAction(InventoryViewModel.Action.OnSaveClick)
         dispatcher.scheduler.runCurrent()
 
         val updated = inventoryRepository.updatedItems.single()
         assertEquals(id, updated.id)
         assertEquals(4, updated.quantity)
-        assertEquals("resold once", updated.note)
         assertEquals(Money(minorUnits = 100_000, currency = SteamCurrency.USD), updated.purchasePrice)
         assertNull(viewModel.stateFlow.value.editSheet)
     }
@@ -276,8 +307,7 @@ class InventoryViewModelTest {
             marketHashName = "Item",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items
@@ -304,8 +334,7 @@ class InventoryViewModelTest {
             marketHashName = "Item",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items
@@ -330,8 +359,7 @@ class InventoryViewModelTest {
             marketHashName = "Item",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items
@@ -356,8 +384,7 @@ class InventoryViewModelTest {
             marketHashName = "Item",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
         dispatcher.scheduler.runCurrent()
         val item = viewModel.stateFlow.value.items

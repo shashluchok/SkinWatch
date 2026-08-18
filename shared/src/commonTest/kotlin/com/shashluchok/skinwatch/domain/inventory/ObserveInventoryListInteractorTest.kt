@@ -25,7 +25,6 @@ class ObserveInventoryListInteractorTest {
             iconUrl = "https://example.com/icon.png",
             quantity = 2,
             purchasePrice = Money(minorUnits = 1234, currency = SteamCurrency.USD),
-            note = null,
         )
 
         val listItem = interactor().first().single()
@@ -41,8 +40,7 @@ class ObserveInventoryListInteractorTest {
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
         priceSnapshotRepository.emitSnapshot(
             marketHashName = hashName,
@@ -67,15 +65,13 @@ class ObserveInventoryListInteractorTest {
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
         inventoryRepository.addItem(
             marketHashName = hashName,
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
 
         val items = interactor().first()

@@ -9,6 +9,8 @@ import com.shashluchok.skinwatch.data.storage.inventory.InventoryDao
 import com.shashluchok.skinwatch.data.storage.inventory.InventoryItemEntity
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotDao
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotEntity
+import com.shashluchok.skinwatch.data.storage.pricesync.PriceSyncStatusDao
+import com.shashluchok.skinwatch.data.storage.pricesync.PriceSyncStatusEntity
 import com.shashluchok.skinwatch.data.storage.settings.SettingsDao
 import com.shashluchok.skinwatch.data.storage.settings.SettingsEntity
 import com.shashluchok.skinwatch.data.storage.watchlist.WatchlistDao
@@ -17,24 +19,19 @@ import com.shashluchok.skinwatch.data.storage.watchlist.WatchlistItemEntity
 /** Filename shared by every platform's `createRoomDatabase` bootstrap. */
 internal const val DATABASE_FILE_NAME = "skinwatch.db"
 
-/**
- * The only `public` type in `data.storage`. Kotlin `internal` is module-scoped, and
- * `androidApp`/`desktopApp`/`webApp` (separate Gradle modules from `shared`) each construct a
- * `RoomDatabase.Builder<AppDatabase>`/`AppDatabase` of their own -- an `internal` class here would
- * not compile from those modules.
- */
 @Database(
     entities = [
         InventoryItemEntity::class,
         WatchlistItemEntity::class,
         PriceSnapshotEntity::class,
         SettingsEntity::class,
+        PriceSyncStatusEntity::class,
     ],
-    version = 2,
+    version = 1,
 )
 @ColumnTypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
-abstract class AppDatabase : RoomDatabase() {
+internal abstract class AppDatabase : RoomDatabase() {
     internal abstract fun inventoryDao(): InventoryDao
 
     internal abstract fun watchlistDao(): WatchlistDao
@@ -42,6 +39,8 @@ abstract class AppDatabase : RoomDatabase() {
     internal abstract fun priceSnapshotDao(): PriceSnapshotDao
 
     internal abstract fun settingsDao(): SettingsDao
+
+    internal abstract fun priceSyncStatusDao(): PriceSyncStatusDao
 }
 
 /**

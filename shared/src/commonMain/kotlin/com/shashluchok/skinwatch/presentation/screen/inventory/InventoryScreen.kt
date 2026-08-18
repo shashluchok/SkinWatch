@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheet
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.PriceHistoryBottomSheet
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncStatusBar
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
@@ -64,6 +65,15 @@ private fun InventoryScreen(
 
     Scaffold(
         modifier = modifier.testTag(InventoryScreen.Tag.ROOT),
+        topBar = {
+            if (state.items.isNotEmpty()) {
+                SyncStatusBar(
+                    lastSyncedAt = state.lastSyncedAt,
+                    isSyncing = state.isSyncing,
+                    onSyncClick = { onAction(InventoryViewModel.Action.OnSyncNowClick) },
+                )
+            }
+        },
     ) { contentPadding ->
         if (state.items.isEmpty()) {
             Box(
@@ -105,7 +115,6 @@ private fun InventoryScreen(
             sheet = sheet,
             onQuantityChange = { onAction(InventoryViewModel.Action.OnQuantityChanged(it)) },
             onPurchasePriceChange = { onAction(InventoryViewModel.Action.OnPurchasePriceChanged(it)) },
-            onNoteChange = { onAction(InventoryViewModel.Action.OnNoteChanged(it)) },
             onSaveClick = { onAction(InventoryViewModel.Action.OnSaveClick) },
             onDeleteClick = { onAction(InventoryViewModel.Action.OnDeleteClick) },
             onDeleteConfirm = { onAction(InventoryViewModel.Action.OnDeleteConfirmed) },

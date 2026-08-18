@@ -38,7 +38,6 @@ internal class MainViewModel(
             val previousSearch: AddSearch,
             val quantity: String = "1",
             val purchasePrice: String = "",
-            val note: String = "",
             val validationError: ValidationError? = null,
         ) : AddSheetState
     }
@@ -82,10 +81,6 @@ internal class MainViewModel(
             val value: String,
         ) : Action
 
-        data class OnNoteChanged(
-            val value: String,
-        ) : Action
-
         data object OnSaveClick : Action
     }
 
@@ -108,7 +103,6 @@ internal class MainViewModel(
             Action.OnAddDetailsBackClick -> onAddDetailsBackClick()
             is Action.OnQuantityChanged -> onQuantityChanged(action.value)
             is Action.OnPurchasePriceChanged -> onPurchasePriceChanged(action.value)
-            is Action.OnNoteChanged -> onNoteChanged(action.value)
             Action.OnSaveClick -> onSaveClick()
         }
     }
@@ -174,10 +168,6 @@ internal class MainViewModel(
         updateSheet<AddSheetState.AddDetails> { it.copy(purchasePrice = value, validationError = null) }
     }
 
-    private fun onNoteChanged(value: String) {
-        updateSheet<AddSheetState.AddDetails> { it.copy(note = value) }
-    }
-
     private fun onSaveClick() {
         val sheet = state.addSheet as? AddSheetState.AddDetails ?: return
         saveNewItem(sheet)
@@ -189,9 +179,8 @@ internal class MainViewModel(
             state = state.copy(addSheet = sheet.copy(validationError = ValidationError.INVALID_QUANTITY))
             return
         }
-        val hasPriceInput = sheet.purchasePrice.isNotBlank()
         val amount = sheet.purchasePrice.toValidatedAmountOrNull()
-        if (hasPriceInput && amount == null) {
+        if (amount == null) {
             state = state.copy(addSheet = sheet.copy(validationError = ValidationError.INVALID_PRICE))
             return
         }
@@ -201,7 +190,6 @@ internal class MainViewModel(
                 iconUrl = sheet.selected.iconUrl,
                 quantity = quantity,
                 purchasePriceAmount = amount,
-                note = sheet.note.ifBlank { null },
             )
             state = state.copy(addSheet = null)
         }

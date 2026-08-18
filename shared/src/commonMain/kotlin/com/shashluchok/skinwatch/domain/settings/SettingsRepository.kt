@@ -2,6 +2,7 @@ package com.shashluchok.skinwatch.domain.settings
 
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * `null` means "no override saved" -- callers fall back to [com.shashluchok.skinwatch.domain.steam
@@ -11,4 +12,12 @@ internal interface SettingsRepository {
     val selectedCurrency: Flow<SteamCurrency?>
 
     suspend fun setSelectedCurrency(currency: SteamCurrency?)
+
+    companion object {
+        val EMPTY = object : SettingsRepository {
+            override val selectedCurrency: Flow<SteamCurrency?> = flowOf(null)
+
+            override suspend fun setSelectedCurrency(currency: SteamCurrency?) = Unit
+        }
+    }
 }

@@ -6,6 +6,9 @@ import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
 import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
+import com.shashluchok.skinwatch.domain.pricesync.FakePriceSyncStatusRepository
+import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
+import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
@@ -21,10 +24,19 @@ internal class InventoryViewModelFixture {
     val priceSnapshotRepository = FakePriceSnapshotRepository()
     val steamMarketRepository = FakeSteamMarketRepository()
     val settingsRepository = FakeSettingsRepository()
+    val priceSyncStatusRepository = FakePriceSyncStatusRepository()
 
     private val resolveDisplayCurrency = ResolveDisplayCurrencyInteractor(
         settingsRepository = settingsRepository,
         steamMarketRepository = steamMarketRepository,
+    )
+
+    private val syncPriceSnapshots = SyncPriceSnapshotsInteractor(
+        inventoryRepository = inventoryRepository,
+        steamMarketRepository = steamMarketRepository,
+        priceSnapshotRepository = priceSnapshotRepository,
+        resolveDisplayCurrency = resolveDisplayCurrency,
+        priceSyncStatusRepository = priceSyncStatusRepository,
     )
 
     fun newViewModel() = InventoryViewModel(
@@ -32,11 +44,10 @@ internal class InventoryViewModelFixture {
             inventoryRepository = inventoryRepository,
             priceSnapshotRepository = priceSnapshotRepository,
         ),
-        updateInventoryItem = UpdateInventoryItemInteractor(
-            inventoryRepository = inventoryRepository,
-            resolveDisplayCurrency = resolveDisplayCurrency,
-        ),
+        updateInventoryItem = UpdateInventoryItemInteractor(inventoryRepository = inventoryRepository),
         removeInventoryItem = RemoveInventoryItemInteractor(inventoryRepository = inventoryRepository),
         observePriceHistory = ObservePriceHistoryInteractor(priceSnapshotRepository = priceSnapshotRepository),
+        syncPriceSnapshots = syncPriceSnapshots,
+        observeLastSyncedAt = ObserveLastSyncedAtInteractor(priceSyncStatusRepository = priceSyncStatusRepository),
     )
 }

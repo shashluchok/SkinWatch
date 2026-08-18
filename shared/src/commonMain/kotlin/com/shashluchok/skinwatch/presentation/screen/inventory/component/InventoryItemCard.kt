@@ -94,8 +94,7 @@ internal fun InventoryItemCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = listItem.item.purchasePrice?.let(::formatMoney)
-                                ?: stringResource(Res.string.dev__screen_inventory__item_card__no_price_data),
+                            text = formatMoney(listItem.item.purchasePrice),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }

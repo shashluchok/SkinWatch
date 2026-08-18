@@ -29,7 +29,6 @@ class InventoryRepositoryImplTest {
             iconUrl = "https://example.com/ak47-redline.png",
             quantity = 2,
             purchasePrice = Money(minorUnits = 1234, currency = SteamCurrency.USD),
-            note = "bought on sale",
         )
 
         val items = repository.observeItems().first()
@@ -39,43 +38,23 @@ class InventoryRepositoryImplTest {
         assertEquals("https://example.com/ak47-redline.png", item.iconUrl)
         assertEquals(2, item.quantity)
         assertEquals(Money(minorUnits = 1234, currency = SteamCurrency.USD), item.purchasePrice)
-        assertEquals("bought on sale", item.note)
     }
 
     @Test
-    fun `addItem with no purchase price stores a null Money`() = runTest {
-        val repository = newRepository()
-
-        repository.addItem(
-            marketHashName = "P250 | Sand Dune",
-            iconUrl = "https://example.com/icon.png",
-            quantity = 1,
-            purchasePrice = null,
-            note = null,
-        )
-
-        val item = repository.observeItems().first().single()
-        assertEquals(null, item.purchasePrice)
-        assertEquals(null, item.note)
-    }
-
-    @Test
-    fun `updateItem changes the stored quantity and note`() = runTest {
+    fun `updateItem changes the stored quantity`() = runTest {
         val repository = newRepository()
         val id = repository.addItem(
             marketHashName = "AWP | Asiimov (Field-Tested)",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
         val original = repository.observeItems().first().single()
 
-        repository.updateItem(original.copy(quantity = 5, note = "updated"))
+        repository.updateItem(original.copy(quantity = 5))
 
         val updated = repository.observeItems().first().single()
         assertEquals(5, updated.quantity)
-        assertEquals("updated", updated.note)
         assertEquals(id, updated.id)
     }
 
@@ -86,13 +65,41 @@ class InventoryRepositoryImplTest {
             marketHashName = "USP-S | Kill Confirmed",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
-            purchasePrice = null,
-            note = null,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
         assertTrue(repository.observeItems().first().isNotEmpty())
 
         repository.removeItem(id)
 
         assertTrue(repository.observeItems().first().isEmpty())
+    }
+
+    @Test
+    fun `getDistinctMarketHashNames returns each name once`() = runTest {
+        val repository = newRepository()
+        repository.addItem(
+            marketHashName = "AK-47 | Redline (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        repository.addItem(
+            marketHashName = "AWP | Asiimov (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+
+        val names = repository.getDistinctMarketHashNames()
+
+        assertEquals(setOf("AK-47 | Redline (Field-Tested)", "AWP | Asiimov (Field-Tested)"), names.toSet())
+        assertEquals(2, names.size)
+    }
+
+    @Test
+    fun `getDistinctMarketHashNames returns an empty list when the inventory is empty`() = runTest {
+        val repository = newRepository()
+
+        assertEquals(emptyList(), repository.getDistinctMarketHashNames())
     }
 }

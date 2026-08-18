@@ -22,11 +22,14 @@
     <string name="dev__screen_inventory__price_history_sheet__price_axis_label">Цена, %1$s</string>
     <string name="dev__screen_inventory__item_card__open_price_history__content_description">Открыть историю цены</string>
     <string name="dev__screen_inventory__item_form__quantity_label">Количество</string>
-    <string name="dev__screen_inventory__item_form__purchase_price_label">Цена покупки (необязательно)</string>
-    <string name="dev__screen_inventory__item_form__note_label">Заметка (необязательно)</string>
+    <string name="dev__screen_inventory__item_form__purchase_price_label">Цена покупки</string>
     <string name="dev__screen_inventory__item_form__quantity_error">Введите целое число не меньше 1</string>
     <string name="dev__screen_inventory__item_form__price_error">Введите корректную положительную сумму</string>
     <string name="dev__screen_inventory__item_form__save_button">Сохранить</string>
+    <string name="dev__screen_inventory__sync_status_bar__never_synced">Ещё не синхронизировано</string>
+    <string name="dev__screen_inventory__sync_status_bar__syncing">Синхронизация…</string>
+    <string name="dev__screen_inventory__sync_status_bar__synced_just_now">Обновлено только что</string>
+    <string name="dev__screen_inventory__sync_status_bar__sync_now__content_description">Синхронизировать цены сейчас</string>
     <string name="dev__dialog_delete_item__title">Удалить предмет?</string>
     <string name="dev__dialog_delete_item__message">Действие необратимо</string>
     <string name="dev__dialog_delete_item__confirm_button">Удалить</string>

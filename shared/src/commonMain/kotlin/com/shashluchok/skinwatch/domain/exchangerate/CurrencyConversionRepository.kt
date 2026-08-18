@@ -16,4 +16,16 @@ internal interface CurrencyConversionRepository {
         targetCurrency: SteamCurrency,
         newSelectedCurrency: SteamCurrency?,
     )
+
+    companion object {
+        val EMPTY = object : CurrencyConversionRepository {
+            override suspend fun hasConvertibleData(): Boolean = false
+
+            override suspend fun convertAll(
+                rates: Map<SteamCurrency, Double>,
+                targetCurrency: SteamCurrency,
+                newSelectedCurrency: SteamCurrency?,
+            ) = Unit
+        }
+    }
 }

@@ -5,7 +5,7 @@ import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 
-fun createRoomDatabase(context: Context): AppDatabase {
+internal fun createRoomDatabase(context: Context): AppDatabase {
     val appContext = context.applicationContext
     return Room
         .databaseBuilder<AppDatabase>(

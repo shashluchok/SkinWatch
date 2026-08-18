@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.shashluchok.skinwatch.di.androidModule
 import com.shashluchok.skinwatch.presentation.navigation.AppContent
 
 class MainActivity : ComponentActivity() {
@@ -14,9 +13,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        val platformModule = androidModule(applicationContext)
         setContent {
-            AppContent(platformModule = platformModule)
+            AppContent()
         }
     }
 }

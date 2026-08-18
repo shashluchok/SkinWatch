@@ -138,7 +138,6 @@ private fun MainScreen(
             onBackClick = { onAction(MainViewModel.Action.OnAddDetailsBackClick) },
             onQuantityChange = { onAction(MainViewModel.Action.OnQuantityChanged(it)) },
             onPurchasePriceChange = { onAction(MainViewModel.Action.OnPurchasePriceChanged(it)) },
-            onNoteChange = { onAction(MainViewModel.Action.OnNoteChanged(it)) },
             onSaveClick = { onAction(MainViewModel.Action.OnSaveClick) },
             onDismiss = { onAction(MainViewModel.Action.OnDismissSheet) },
         )

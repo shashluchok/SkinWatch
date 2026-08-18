@@ -84,6 +84,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.androidx.work.runtimeKtx)
         }
         commonMain.dependencies {
             implementation(libs.koin.core)
@@ -125,9 +126,6 @@ kotlin {
         }
         jsMain.dependencies {
             implementation(libs.wrappers.browser)
-        }
-        webMain.dependencies {
-            implementation(project(":sqliteWebWorker"))
         }
     }
 }
