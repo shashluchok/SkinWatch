@@ -6,9 +6,12 @@ import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
 import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
+import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
+import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -18,10 +21,12 @@ internal class InventoryViewModel(
     private val observeInventoryList: ObserveInventoryListInteractor,
     private val updateInventoryItem: UpdateInventoryItemInteractor,
     private val removeInventoryItem: RemoveInventoryItemInteractor,
+    private val observePriceHistory: ObservePriceHistoryInteractor,
 ) : BaseViewModel<InventoryViewModel.State, InventoryViewModel.Action>() {
     data class State(
         val items: List<InventoryListItem> = emptyList(),
         val editSheet: EditSheetState? = null,
+        val priceHistorySheet: PriceHistorySheetState? = null,
     )
 
     data class EditSheetState(
@@ -31,6 +36,12 @@ internal class InventoryViewModel(
         val note: String,
         val validationError: ValidationError? = null,
         val showDeleteConfirmation: Boolean = false,
+    )
+
+    data class PriceHistorySheetState(
+        val item: InventoryItem,
+        val snapshots: List<PriceSnapshot> = emptyList(),
+        val isLoading: Boolean = true,
     )
 
     sealed interface Action {
@@ -59,9 +70,13 @@ internal class InventoryViewModel(
         data object OnDeleteCancelled : Action
 
         data object OnDismissSheet : Action
+
+        data object OnDismissPriceHistorySheet : Action
     }
 
     override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
+
+    private var priceHistoryJob: Job? = null
 
     init {
         observeInventoryList().onEach { items -> state = state.copy(items = items) }.launchIn(viewModelScope)
@@ -78,18 +93,32 @@ internal class InventoryViewModel(
             Action.OnDeleteConfirmed -> onDeleteConfirmed()
             Action.OnDeleteCancelled -> onDeleteCancelled()
             Action.OnDismissSheet -> onDismissSheet()
+            Action.OnDismissPriceHistorySheet -> onDismissPriceHistorySheet()
         }
     }
 
+    /**
+     * Opens the price history sheet for [item] and subscribes to its live snapshot history.
+     * [priceHistoryJob] tracks that subscription so it can be cancelled -- on dismiss (see
+     * [onDismissPriceHistorySheet]) or when a different item is clicked while the sheet is already
+     * open -- rather than accumulating one subscription per click for the ViewModel's whole
+     * lifetime.
+     */
     private fun onItemClick(item: InventoryItem) {
-        state = state.copy(
-            editSheet = EditSheetState(
-                item = item,
-                quantity = item.quantity.toString(),
-                purchasePrice = item.purchasePrice?.let(::formatMajorUnits).orEmpty(),
-                note = item.note.orEmpty(),
-            ),
-        )
+        state = state.copy(priceHistorySheet = PriceHistorySheetState(item = item))
+        priceHistoryJob?.cancel()
+        priceHistoryJob = observePriceHistory(item.marketHashName)
+            .onEach { snapshots ->
+                state = state.copy(
+                    priceHistorySheet = state.priceHistorySheet?.copy(snapshots = snapshots, isLoading = false),
+                )
+            }.launchIn(viewModelScope)
+    }
+
+    private fun onDismissPriceHistorySheet() {
+        priceHistoryJob?.cancel()
+        priceHistoryJob = null
+        state = state.copy(priceHistorySheet = null)
     }
 
     private fun onDismissSheet() {

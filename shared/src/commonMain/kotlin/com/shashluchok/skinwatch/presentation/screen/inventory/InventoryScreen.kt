@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheet
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.PriceHistoryBottomSheet
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
@@ -110,6 +111,13 @@ private fun InventoryScreen(
             onDeleteConfirm = { onAction(InventoryViewModel.Action.OnDeleteConfirmed) },
             onDeleteCancel = { onAction(InventoryViewModel.Action.OnDeleteCancelled) },
             onDismiss = { onAction(InventoryViewModel.Action.OnDismissSheet) },
+        )
+    }
+
+    state.priceHistorySheet?.let { sheet ->
+        PriceHistoryBottomSheet(
+            sheet = sheet,
+            onDismiss = { onAction(InventoryViewModel.Action.OnDismissPriceHistorySheet) },
         )
     }
 }

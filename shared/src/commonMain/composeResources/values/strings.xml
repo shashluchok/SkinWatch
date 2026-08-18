@@ -15,6 +15,12 @@
     <string name="dev__screen_inventory__add_details__title">Детали покупки</string>
     <string name="dev__screen_inventory__edit_sheet__title">Редактировать предмет</string>
     <string name="dev__screen_inventory__edit_sheet__delete_button">Удалить предмет</string>
+    <string name="dev__screen_inventory__price_history_sheet__title">История цены</string>
+    <string name="dev__screen_inventory__price_history_sheet__empty_state">Пока нет данных о цене</string>
+    <string name="dev__screen_inventory__price_history_sheet__single_point_hint">История появится по мере накопления данных</string>
+    <string name="dev__screen_inventory__price_history_sheet__purchase_price_label">Цена покупки</string>
+    <string name="dev__screen_inventory__price_history_sheet__price_axis_label">Цена, %1$s</string>
+    <string name="dev__screen_inventory__item_card__open_price_history__content_description">Открыть историю цены</string>
     <string name="dev__screen_inventory__item_form__quantity_label">Количество</string>
     <string name="dev__screen_inventory__item_form__purchase_price_label">Цена покупки (необязательно)</string>
     <string name="dev__screen_inventory__item_form__note_label">Заметка (необязательно)</string>

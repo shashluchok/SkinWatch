@@ -103,6 +103,8 @@ kotlin {
             implementation(libs.compottie)
             implementation(libs.coil.compose)
             implementation(libs.coil.networkKtor3)
+            implementation(libs.vico.composeM3)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.cio)
             implementation(libs.ktor.client.contentNegotiation)

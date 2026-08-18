@@ -5,6 +5,7 @@ import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
@@ -36,5 +37,6 @@ internal class InventoryViewModelFixture {
             resolveDisplayCurrency = resolveDisplayCurrency,
         ),
         removeInventoryItem = RemoveInventoryItemInteractor(inventoryRepository = inventoryRepository),
+        observePriceHistory = ObservePriceHistoryInteractor(priceSnapshotRepository = priceSnapshotRepository),
     )
 }

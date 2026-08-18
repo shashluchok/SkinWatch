@@ -35,9 +35,13 @@ kotlin-wrappers = "2026.8.0"
 kotlinx-coroutines = "1.11.0"
 ktor = "3.5.1"
 kotlinx-serialization = "1.11.0"
+kotlinx-datetime = "0.8.0"
 
 # Animation
 compottie = "2.2.4"
+
+# Charts
+vico = "3.3.0"
 
 # Images
 coil = "3.5.0"
@@ -80,6 +84,7 @@ compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref 
 # Kotlin ecosystem
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 wrappers-browser = { module = "org.jetbrains.kotlin-wrappers:kotlin-browser", version.ref = "kotlin-wrappers" }
 
 # DI
@@ -92,6 +97,8 @@ navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui",
 
 # Animation
 compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "compottie" }
+
+vico-composeM3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
 
 # Images
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }

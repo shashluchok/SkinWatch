@@ -21,6 +21,7 @@ internal val viewModelModule = module {
             observeInventoryList = get(),
             updateInventoryItem = get(),
             removeInventoryItem = get(),
+            observePriceHistory = get(),
         )
     }
     viewModel { WatchlistViewModel() }
