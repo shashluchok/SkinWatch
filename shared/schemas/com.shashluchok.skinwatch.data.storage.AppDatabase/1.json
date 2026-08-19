@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "e01cd0a0ecd10aabaabac094b26a7d3b",
+    "identityHash": "f93ebcbe5456b48a804307d06318f475",
     "entities": [
       {
         "tableName": "InventoryItem",
@@ -197,11 +197,82 @@
             "id"
           ]
         }
+      },
+      {
+        "tableName": "CatalogItem",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`marketHashName` TEXT NOT NULL, `displayName` TEXT NOT NULL, `iconUrl` TEXT NOT NULL, `category` INTEGER NOT NULL, PRIMARY KEY(`marketHashName`))",
+        "fields": [
+          {
+            "fieldPath": "marketHashName",
+            "columnName": "marketHashName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconUrl",
+            "columnName": "iconUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "marketHashName"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_CatalogItem_displayName",
+            "unique": false,
+            "columnNames": [
+              "displayName"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_CatalogItem_displayName` ON `${TABLE_NAME}` (`displayName`)"
+          }
+        ]
+      },
+      {
+        "tableName": "CatalogSyncStatus",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `lastCompletedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastCompletedAt",
+            "columnName": "lastCompletedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e01cd0a0ecd10aabaabac094b26a7d3b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f93ebcbe5456b48a804307d06318f475')"
     ]
   }
 }

@@ -1,5 +1,7 @@
 package com.shashluchok.skinwatch.di
 
+import com.shashluchok.skinwatch.data.catalog.CatalogHttpClientFactory
+import com.shashluchok.skinwatch.data.catalog.KtorItemCatalogApi
 import com.shashluchok.skinwatch.data.exchangerate.ExchangeRateApi
 import com.shashluchok.skinwatch.data.exchangerate.ExchangeRateHttpClientFactory
 import com.shashluchok.skinwatch.data.exchangerate.ExchangeRateRepositoryImpl
@@ -12,11 +14,16 @@ import com.shashluchok.skinwatch.data.steam.SteamRateLimiter
 import com.shashluchok.skinwatch.data.steam.currentDeviceRegionCode
 import com.shashluchok.skinwatch.data.storage.AppDatabase
 import com.shashluchok.skinwatch.data.storage.CurrencyConversionRepositoryImpl
+import com.shashluchok.skinwatch.data.storage.catalog.CatalogSyncStatusRepositoryImpl
+import com.shashluchok.skinwatch.data.storage.catalog.ItemCatalogRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.inventory.InventoryRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.pricesync.PriceSyncStatusRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.settings.SettingsRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.watchlist.WatchlistRepositoryImpl
+import com.shashluchok.skinwatch.domain.catalog.CatalogSyncStatusRepository
+import com.shashluchok.skinwatch.domain.catalog.ItemCatalogRemoteSource
+import com.shashluchok.skinwatch.domain.catalog.ItemCatalogRepository
 import com.shashluchok.skinwatch.domain.exchangerate.CurrencyConversionRepository
 import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateRepository
 import com.shashluchok.skinwatch.domain.inventory.InventoryRepository
@@ -32,6 +39,7 @@ private const val PRIMARY_EXCHANGE_RATE_BASE_URL = "https://cdn.jsdelivr.net/npm
 private const val FALLBACK_EXCHANGE_RATE_BASE_URL = "https://latest.currency-api.pages.dev"
 
 internal val dataModule = module {
+    // Steam
     single { HttpClientFactory.create() }
     single<SteamMarketApi> { KtorSteamMarketApi(httpClient = get()) }
     single { SteamRateLimiter() }
@@ -39,6 +47,7 @@ internal val dataModule = module {
         SteamMarketRepositoryImpl(api = get(), rateLimiter = get(), deviceRegionCode = ::currentDeviceRegionCode)
     }
 
+    // Exchange rate
     single { ExchangeRateHttpClientFactory.create() }
     single<ExchangeRateApi>(named("exchangeRatePrimary")) {
         KtorExchangeRateApi(httpClient = get(), baseUrl = PRIMARY_EXCHANGE_RATE_BASE_URL)
@@ -53,6 +62,7 @@ internal val dataModule = module {
         )
     }
 
+    // Database
     single { get<AppDatabase>().inventoryDao() }
     single { get<AppDatabase>().watchlistDao() }
     single { get<AppDatabase>().priceSnapshotDao() }
@@ -71,4 +81,12 @@ internal val dataModule = module {
             settingsDao = get(),
         )
     }
+
+    // Catalog
+    single(named("catalog")) { CatalogHttpClientFactory.create() }
+    single<ItemCatalogRemoteSource> { KtorItemCatalogApi(httpClient = get(named("catalog"))) }
+    single { get<AppDatabase>().catalogItemDao() }
+    single { get<AppDatabase>().catalogSyncStatusDao() }
+    single<ItemCatalogRepository> { ItemCatalogRepositoryImpl(dao = get()) }
+    single<CatalogSyncStatusRepository> { CatalogSyncStatusRepositoryImpl(dao = get()) }
 }

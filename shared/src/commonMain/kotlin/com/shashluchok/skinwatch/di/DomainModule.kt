@@ -1,5 +1,7 @@
 package com.shashluchok.skinwatch.di
 
+import com.shashluchok.skinwatch.domain.catalog.SyncCatalogItemsIfStaleInteractor
+import com.shashluchok.skinwatch.domain.catalog.SyncCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
 import com.shashluchok.skinwatch.domain.exchangerate.HasConvertiblePricesInteractor
 import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
@@ -22,8 +24,12 @@ import org.koin.dsl.module
  * implementations in [dataModule] instead, since those implementations live in `data.*`.
  */
 internal val domainModule = module {
+    // Steam / search
     single { ResolveDisplayCurrencyInteractor(settingsRepository = get(), steamMarketRepository = get()) }
     single { SearchMarketItemsInteractor(steamMarketRepository = get(), resolveDisplayCurrency = get()) }
+    single { GetDefaultCurrencyInteractor(steamMarketRepository = get()) }
+
+    // Inventory
     single {
         AddInventoryItemInteractor(
             inventoryRepository = get(),
@@ -36,11 +42,14 @@ internal val domainModule = module {
     single { RemoveInventoryItemInteractor(inventoryRepository = get()) }
     single { ObserveInventoryListInteractor(inventoryRepository = get(), priceSnapshotRepository = get()) }
     single { ObservePriceHistoryInteractor(priceSnapshotRepository = get()) }
+
+    // Settings / currency
     single { ObserveSelectedCurrencyInteractor(settingsRepository = get()) }
     single { SetSelectedCurrencyInteractor(settingsRepository = get()) }
-    single { GetDefaultCurrencyInteractor(steamMarketRepository = get()) }
     single { HasConvertiblePricesInteractor(currencyConversionRepository = get()) }
     single { ConvertStoredPricesInteractor(exchangeRateRepository = get(), currencyConversionRepository = get()) }
+
+    // Price sync
     single {
         SyncPriceSnapshotsInteractor(
             inventoryRepository = get(),
@@ -52,4 +61,14 @@ internal val domainModule = module {
     }
     single { SyncPriceSnapshotsIfStaleInteractor(priceSyncStatusRepository = get(), syncPriceSnapshots = get()) }
     single { ObserveLastSyncedAtInteractor(priceSyncStatusRepository = get()) }
+
+    // Catalog sync
+    single {
+        SyncCatalogItemsInteractor(
+            remoteSource = get(),
+            catalogRepository = get(),
+            catalogSyncStatusRepository = get(),
+        )
+    }
+    single { SyncCatalogItemsIfStaleInteractor(catalogSyncStatusRepository = get(), syncCatalogItems = get()) }
 }

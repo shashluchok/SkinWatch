@@ -10,12 +10,17 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 internal val viewModelModule = module {
+    // App-level (not tied to a screen)
     viewModel {
         AppViewModel(
             priceSyncScheduler = get(),
             syncPriceSnapshotsIfStale = get(),
+            catalogSyncScheduler = get(),
+            syncCatalogItemsIfStale = get(),
         )
     }
+
+    // Screens
     viewModel { SplashViewModel() }
     viewModel {
         MainViewModel(

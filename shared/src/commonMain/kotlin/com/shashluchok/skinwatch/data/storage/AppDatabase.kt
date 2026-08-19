@@ -5,6 +5,10 @@ import androidx.room3.ConstructedBy
 import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
+import com.shashluchok.skinwatch.data.storage.catalog.CatalogItemDao
+import com.shashluchok.skinwatch.data.storage.catalog.CatalogItemEntity
+import com.shashluchok.skinwatch.data.storage.catalog.CatalogSyncStatusDao
+import com.shashluchok.skinwatch.data.storage.catalog.CatalogSyncStatusEntity
 import com.shashluchok.skinwatch.data.storage.inventory.InventoryDao
 import com.shashluchok.skinwatch.data.storage.inventory.InventoryItemEntity
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotDao
@@ -26,6 +30,8 @@ internal const val DATABASE_FILE_NAME = "skinwatch.db"
         PriceSnapshotEntity::class,
         SettingsEntity::class,
         PriceSyncStatusEntity::class,
+        CatalogItemEntity::class,
+        CatalogSyncStatusEntity::class,
     ],
     version = 1,
 )
@@ -41,6 +47,10 @@ internal abstract class AppDatabase : RoomDatabase() {
     internal abstract fun settingsDao(): SettingsDao
 
     internal abstract fun priceSyncStatusDao(): PriceSyncStatusDao
+
+    internal abstract fun catalogItemDao(): CatalogItemDao
+
+    internal abstract fun catalogSyncStatusDao(): CatalogSyncStatusDao
 }
 
 /**
