@@ -34,5 +34,4 @@ plugins {
 include(":androidApp")
 include(":desktopApp")
 include(":shared")
-include(":sqliteWebWorker")
 include(":webApp")
