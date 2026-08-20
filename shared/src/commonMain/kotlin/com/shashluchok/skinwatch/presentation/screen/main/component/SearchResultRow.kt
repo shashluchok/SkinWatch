@@ -18,15 +18,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import coil3.compose.AsyncImage
-import com.shashluchok.skinwatch.domain.steam.Money
-import com.shashluchok.skinwatch.domain.steam.SteamMarketItem
+import com.shashluchok.skinwatch.domain.catalog.CatalogItem
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
-
-private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun SearchResultRow(
-    result: SteamMarketItem,
+    result: CatalogItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -53,21 +51,12 @@ internal fun SearchResultRow(
         Column {
             Text(text = result.displayName, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = result.sellPrice?.let(::formatMoney).orEmpty(),
+                text = stringResource(categoryLabel(result.category)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
-}
-
-/**
- * Plain, locale-independent formatting for now (e.g. "49.00 USD") -- exact currency symbol/
- * position/locale formatting is a follow-up visual-design pass, not decided by this screen.
- */
-private fun formatMoney(money: Money): String {
-    val major = money.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT
-    return "$major ${money.currency.name}"
 }
 
 internal object SearchResultRow {

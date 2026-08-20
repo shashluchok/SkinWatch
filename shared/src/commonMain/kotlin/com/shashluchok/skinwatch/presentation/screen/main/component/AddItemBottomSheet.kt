@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -18,17 +17,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.shashluchok.skinwatch.domain.steam.SteamMarketItem
+import com.shashluchok.skinwatch.domain.catalog.CatalogItem
 import com.shashluchok.skinwatch.presentation.component.ItemDetailsForm
 import com.shashluchok.skinwatch.presentation.component.PartialHeightModalBottomSheet
 import com.shashluchok.skinwatch.presentation.screen.main.MainViewModel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__add_details__title
+import com.shashluchok.skinwatch.resources.dev__screen_inventory__add_search__catalog_empty
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__add_search__empty_results
-import com.shashluchok.skinwatch.resources.dev__screen_inventory__add_search__error
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__add_search__query_placeholder
-import com.shashluchok.skinwatch.resources.dev__screen_inventory__add_search__taking_longer
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__add_search__title
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__save_button
 import org.jetbrains.compose.resources.stringResource
@@ -39,7 +37,7 @@ private const val ADD_ITEM_BOTTOM_SHEET_STEP_LABEL = "AddItemBottomSheetStep"
 internal fun AddItemBottomSheet(
     sheet: MainViewModel.AddSheetState,
     onQueryChange: (String) -> Unit,
-    onResultSelect: (SteamMarketItem) -> Unit,
+    onResultSelect: (CatalogItem) -> Unit,
     onBackClick: () -> Unit,
     onQuantityChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
@@ -79,7 +77,7 @@ internal fun AddItemBottomSheet(
 private fun AddSearchStep(
     sheet: MainViewModel.AddSheetState.AddSearch,
     onQueryChange: (String) -> Unit,
-    onResultSelect: (SteamMarketItem) -> Unit,
+    onResultSelect: (CatalogItem) -> Unit,
 ) {
     val dimens = LocalDimens.current
 
@@ -100,19 +98,6 @@ private fun AddSearchStep(
         )
         when (val status = sheet.status) {
             MainViewModel.SearchStatus.Idle -> Unit
-            MainViewModel.SearchStatus.Searching -> CircularProgressIndicator(
-                modifier = Modifier.padding(top = dimens.padding.medium),
-            )
-
-            MainViewModel.SearchStatus.TakingLonger -> Column {
-                CircularProgressIndicator(modifier = Modifier.padding(top = dimens.padding.medium))
-                Text(
-                    modifier = Modifier.padding(top = dimens.padding.small),
-                    text = stringResource(Res.string.dev__screen_inventory__add_search__taking_longer),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
 
             is MainViewModel.SearchStatus.Loaded -> if (status.results.isEmpty()) {
                 Text(
@@ -134,9 +119,9 @@ private fun AddSearchStep(
                 }
             }
 
-            is MainViewModel.SearchStatus.Failed -> Text(
+            MainViewModel.SearchStatus.CatalogUnavailable -> Text(
                 modifier = Modifier.padding(top = dimens.padding.medium),
-                text = stringResource(Res.string.dev__screen_inventory__add_search__error),
+                text = stringResource(Res.string.dev__screen_inventory__add_search__catalog_empty),
                 color = MaterialTheme.colorScheme.error,
             )
         }

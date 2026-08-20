@@ -8,7 +8,10 @@ import androidx.room3.Transaction
 
 @Dao
 internal interface CatalogItemDao {
-    @Query("SELECT * FROM CatalogItem WHERE displayName LIKE '%' || :query || '%' COLLATE NOCASE")
+    @Query(
+        "SELECT * FROM CatalogItem WHERE displayName LIKE '%' || :query || '%' COLLATE NOCASE " +
+            "ORDER BY displayName LIMIT 50",
+    )
     suspend fun search(query: String): List<CatalogItemEntity>
 
     @Query("SELECT COUNT(*) FROM CatalogItem")

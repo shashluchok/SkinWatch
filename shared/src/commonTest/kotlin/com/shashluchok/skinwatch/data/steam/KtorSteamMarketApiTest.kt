@@ -15,16 +15,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class KtorSteamMarketApiTest {
-    private val searchResponseJson =
-        """
-        {"success":true,"start":0,"pagesize":10,"total_count":597,
-        "results":[{"name":"AK-47 | Inheritance (Field-Tested)",
-        "hash_name":"AK-47 | Inheritance (Field-Tested)","sell_listings":835,
-        "sell_price":5193,"sell_price_text":"${'$'}51.93",
-        "asset_description":{"icon_url":"i0CoZ81Ui0m-9KwlBY1L",
-        "market_hash_name":"AK-47 | Inheritance (Field-Tested)"}}]}
-        """.trimIndent()
-
     private val priceOverviewJson =
         """
         {"success":true,"lowest_price":"${'$'}51.93","volume":"182","median_price":"${'$'}52.98"}
@@ -38,35 +28,12 @@ class KtorSteamMarketApiTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/json"),
             )
         }
-        // Matches HttpClientFactory's real config: the fixtures below carry fields
-        // (e.g. "start", "pagesize", "sell_price_text") the DTOs deliberately don't model.
+        // Matches HttpClientFactory's real config: Steam adds new response fields over time,
+        // and unknown ones should be ignored rather than fail decoding.
         val httpClient = HttpClient(mockEngine) {
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
         }
         return KtorSteamMarketApi(httpClient)
-    }
-
-    @Test
-    fun `searchItems decodes a real search-render response`() = runTest {
-        val api = apiWithFixedResponse(searchResponseJson)
-
-        val response = api.searchItems(
-            query = "AK-47",
-            currency = SteamCurrency.USD,
-            count = 10,
-            start = 0,
-        )
-
-        assertEquals(true, response.success)
-        assertEquals(1, response.results.size)
-        assertEquals("AK-47 | Inheritance (Field-Tested)", response.results.first().hashName)
-        assertEquals(5193L, response.results.first().sellPrice)
-        assertEquals(
-            "i0CoZ81Ui0m-9KwlBY1L",
-            response.results
-                .first()
-                .assetDescription.iconUrl,
-        )
     }
 
     @Test

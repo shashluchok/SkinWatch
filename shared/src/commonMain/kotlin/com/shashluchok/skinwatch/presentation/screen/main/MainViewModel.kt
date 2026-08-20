@@ -1,17 +1,13 @@
 package com.shashluchok.skinwatch.presentation.screen.main
 
 import androidx.lifecycle.viewModelScope
+import com.shashluchok.skinwatch.domain.catalog.CatalogItem
+import com.shashluchok.skinwatch.domain.catalog.SearchCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
-import com.shashluchok.skinwatch.domain.steam.SearchMarketItemsInteractor
-import com.shashluchok.skinwatch.domain.steam.SteamMarketError
-import com.shashluchok.skinwatch.domain.steam.SteamMarketItem
-import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -20,7 +16,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 internal class MainViewModel(
-    private val searchMarketItems: SearchMarketItemsInteractor,
+    private val searchCatalogItems: SearchCatalogItemsInteractor,
     private val addInventoryItem: AddInventoryItemInteractor,
 ) : BaseViewModel<MainViewModel.State, MainViewModel.Action>() {
     data class State(
@@ -34,7 +30,7 @@ internal class MainViewModel(
         ) : AddSheetState
 
         data class AddDetails(
-            val selected: SteamMarketItem,
+            val selected: CatalogItem,
             val previousSearch: AddSearch,
             val quantity: String = "1",
             val purchasePrice: String = "",
@@ -45,17 +41,11 @@ internal class MainViewModel(
     sealed interface SearchStatus {
         data object Idle : SearchStatus
 
-        data object Searching : SearchStatus
-
-        data object TakingLonger : SearchStatus
-
         data class Loaded(
-            val results: List<SteamMarketItem>,
+            val results: List<CatalogItem>,
         ) : SearchStatus
 
-        data class Failed(
-            val error: SteamMarketError,
-        ) : SearchStatus
+        data object CatalogUnavailable : SearchStatus
     }
 
     sealed interface Action {
@@ -68,7 +58,7 @@ internal class MainViewModel(
         ) : Action
 
         data class OnSearchResultSelected(
-            val result: SteamMarketItem,
+            val result: CatalogItem,
         ) : Action
 
         data object OnAddDetailsBackClick : Action
@@ -134,23 +124,16 @@ internal class MainViewModel(
             updateSheet<AddSheetState.AddSearch> { it.copy(status = SearchStatus.Idle) }
             return
         }
-        updateSheet<AddSheetState.AddSearch> { it.copy(status = SearchStatus.Searching) }
-        coroutineScope {
-            launch {
-                delay(TAKING_LONGER_THRESHOLD)
-                updateSheet<AddSheetState.AddSearch> { it.copy(status = SearchStatus.TakingLonger) }
-            }
-            val result = searchMarketItems(query)
-            updateSheet<AddSheetState.AddSearch> { it.copy(status = result.toSearchStatus()) }
-        }
+        val result = searchCatalogItems(query)
+        updateSheet<AddSheetState.AddSearch> { it.copy(status = result.toSearchStatus()) }
     }
 
-    private fun SteamMarketResult<List<SteamMarketItem>>.toSearchStatus(): SearchStatus = when (this) {
-        is SteamMarketResult.Success -> SearchStatus.Loaded(results = data)
-        is SteamMarketResult.Failure -> SearchStatus.Failed(error = error)
+    private fun SearchCatalogItemsInteractor.Result.toSearchStatus(): SearchStatus = when (this) {
+        is SearchCatalogItemsInteractor.Result.Loaded -> SearchStatus.Loaded(results = items)
+        SearchCatalogItemsInteractor.Result.CatalogUnavailable -> SearchStatus.CatalogUnavailable
     }
 
-    private fun onSearchResultSelected(result: SteamMarketItem) {
+    private fun onSearchResultSelected(result: CatalogItem) {
         val previousSearch = state.addSheet as? AddSheetState.AddSearch ?: return
         state = state.copy(addSheet = AddSheetState.AddDetails(selected = result, previousSearch = previousSearch))
     }
@@ -201,6 +184,5 @@ internal class MainViewModel(
     private companion object {
         const val MIN_QUANTITY = 1
         val SEARCH_DEBOUNCE = 300.milliseconds
-        val TAKING_LONGER_THRESHOLD = 1500.milliseconds
     }
 }

@@ -1,5 +1,6 @@
 package com.shashluchok.skinwatch.di
 
+import com.shashluchok.skinwatch.domain.catalog.SearchCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.catalog.SyncCatalogItemsIfStaleInteractor
 import com.shashluchok.skinwatch.domain.catalog.SyncCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
@@ -16,7 +17,6 @@ import com.shashluchok.skinwatch.domain.settings.ObserveSelectedCurrencyInteract
 import com.shashluchok.skinwatch.domain.settings.SetSelectedCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.GetDefaultCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
-import com.shashluchok.skinwatch.domain.steam.SearchMarketItemsInteractor
 import org.koin.dsl.module
 
 /**
@@ -26,7 +26,6 @@ import org.koin.dsl.module
 internal val domainModule = module {
     // Steam / search
     single { ResolveDisplayCurrencyInteractor(settingsRepository = get(), steamMarketRepository = get()) }
-    single { SearchMarketItemsInteractor(steamMarketRepository = get(), resolveDisplayCurrency = get()) }
     single { GetDefaultCurrencyInteractor(steamMarketRepository = get()) }
 
     // Inventory
@@ -62,7 +61,7 @@ internal val domainModule = module {
     single { SyncPriceSnapshotsIfStaleInteractor(priceSyncStatusRepository = get(), syncPriceSnapshots = get()) }
     single { ObserveLastSyncedAtInteractor(priceSyncStatusRepository = get()) }
 
-    // Catalog sync
+    // Catalog
     single {
         SyncCatalogItemsInteractor(
             remoteSource = get(),
@@ -71,4 +70,5 @@ internal val domainModule = module {
         )
     }
     single { SyncCatalogItemsIfStaleInteractor(catalogSyncStatusRepository = get(), syncCatalogItems = get()) }
+    single { SearchCatalogItemsInteractor(catalogRepository = get()) }
 }

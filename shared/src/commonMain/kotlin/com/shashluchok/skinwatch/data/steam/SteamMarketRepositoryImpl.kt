@@ -1,11 +1,8 @@
 package com.shashluchok.skinwatch.data.steam
 
 import com.shashluchok.skinwatch.data.steam.dto.PriceOverviewResponseDto
-import com.shashluchok.skinwatch.data.steam.dto.SearchResultDto
-import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
-import com.shashluchok.skinwatch.domain.steam.SteamMarketItem
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
 import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
@@ -27,23 +24,6 @@ internal class SteamMarketRepositoryImpl(
     override val defaultCurrency: SteamCurrency
         get() = resolveSteamCurrency(deviceRegionCode())
 
-    override suspend fun searchItems(
-        query: String,
-        currency: SteamCurrency,
-    ): SteamMarketResult<List<SteamMarketItem>> = runCatching {
-        rateLimiter.awaitTurn(SteamEndpoint.SEARCH)
-        api.searchItems(query = query, currency = currency, count = SEARCH_PAGE_SIZE, start = 0)
-    }.fold(
-        onSuccess = { dto ->
-            if (!dto.success) {
-                SteamMarketResult.Failure(SteamMarketError.InvalidResponse)
-            } else {
-                SteamMarketResult.Success(dto.results.map { it.toDomain(currency) })
-            }
-        },
-        onFailure = { SteamMarketResult.Failure(it.toSteamMarketError()) },
-    )
-
     override suspend fun getPriceOverview(
         marketHashName: String,
         currency: SteamCurrency,
@@ -62,19 +42,6 @@ internal class SteamMarketRepositoryImpl(
             }
         },
         onFailure = { SteamMarketResult.Failure(it.toSteamMarketError()) },
-    )
-
-    private companion object {
-        const val SEARCH_PAGE_SIZE = 20
-        const val ICON_BASE_URL = "https://community.cloudflare.steamstatic.com/economy/image/"
-    }
-
-    private fun SearchResultDto.toDomain(currency: SteamCurrency): SteamMarketItem = SteamMarketItem(
-        marketHashName = hashName,
-        displayName = name,
-        iconUrl = ICON_BASE_URL + assetDescription.iconUrl,
-        sellListingsCount = sellListings,
-        sellPrice = sellPrice?.let { Money(minorUnits = it, currency = currency) },
     )
 
     private fun PriceOverviewResponseDto.toDomain(currency: SteamCurrency): SteamPriceOverview = SteamPriceOverview(

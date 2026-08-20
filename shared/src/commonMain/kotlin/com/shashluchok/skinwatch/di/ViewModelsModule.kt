@@ -24,7 +24,7 @@ internal val viewModelModule = module {
     viewModel { SplashViewModel() }
     viewModel {
         MainViewModel(
-            searchMarketItems = get(),
+            searchCatalogItems = get(),
             addInventoryItem = get(),
         )
     }

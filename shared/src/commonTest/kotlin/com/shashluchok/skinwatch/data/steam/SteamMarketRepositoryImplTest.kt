@@ -3,7 +3,6 @@ package com.shashluchok.skinwatch.data.steam
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
-import com.shashluchok.skinwatch.domain.steam.SteamMarketItem
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
 import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
 import io.ktor.client.HttpClient
@@ -191,31 +190,5 @@ class SteamMarketRepositoryImplTest {
 
         val failure = assertIs<SteamMarketResult.Failure>(result)
         assertEquals(SteamMarketError.RateLimited, failure.error)
-    }
-
-    @Test
-    fun `searchItems maps results to domain items with resolved icon urls`() = runTest {
-        val mockEngine = MockEngine { _ ->
-            respond(
-                content =
-                    """
-                    {"success":true,"total_count":1,"results":[{"name":"AK-47 | Redline (Field-Tested)",
-                    "hash_name":"AK-47 | Redline (Field-Tested)","sell_listings":900,"sell_price":1234,
-                    "asset_description":{"icon_url":"abc123","market_hash_name":"AK-47 | Redline (Field-Tested)"}}]}
-                    """.trimIndent(),
-                status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, "application/json"),
-            )
-        }
-        val repository = repositoryWithEngine(mockEngine)
-
-        val result = repository.searchItems(query = "AK-47", currency = SteamCurrency.USD)
-
-        val success = assertIs<SteamMarketResult.Success<List<SteamMarketItem>>>(result)
-        val item = success.data.single()
-        assertEquals("AK-47 | Redline (Field-Tested)", item.marketHashName)
-        assertEquals(900, item.sellListingsCount)
-        assertEquals(Money(minorUnits = 1234, currency = SteamCurrency.USD), item.sellPrice)
-        assertEquals("https://community.cloudflare.steamstatic.com/economy/image/abc123", item.iconUrl)
     }
 }
