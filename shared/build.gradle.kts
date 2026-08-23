@@ -111,6 +111,7 @@ kotlin {
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.serialization.kotlinxJson)
             implementation(libs.kotlinx.serializationJson)
+            implementation(libs.kotlinx.serializationJsonIo)
             implementation(libs.androidx.room3.runtime)
         }
         commonTest.dependencies {

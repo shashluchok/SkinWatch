@@ -26,28 +26,41 @@ class SyncCatalogItemsInteractorTest {
     )
 
     @Test
-    fun `every category is fetched and replaced on full success, run marked completed`() = runTest {
-        remoteSource.resultsByCategory[CatalogCategory.SKIN] =
-            CatalogFetchResult.Success(listOf(catalogItem("AK-47 | Redline", CatalogCategory.SKIN)))
+    fun `every category is fetched and its chunks inserted on full success, run marked completed`() = runTest {
+        remoteSource.chunksByCategory[CatalogCategory.SKIN] =
+            listOf(listOf(catalogItem("AK-47 | Redline", CatalogCategory.SKIN)))
 
         newInteractor().invoke()
 
         assertEquals(CatalogCategory.entries.size, remoteSource.fetchCalls.size)
-        assertTrue(catalogRepository.replaceCategoryCalls.any { it.first == CatalogCategory.SKIN })
+        assertTrue(catalogRepository.clearCategoryCalls.contains(CatalogCategory.SKIN))
+        assertTrue(catalogRepository.insertItemsCalls.any { it.first == CatalogCategory.SKIN })
         assertEquals(1, catalogSyncStatusRepository.markCompletedCalls.size)
     }
 
     @Test
-    fun `a failed category is skipped, does not stop the rest, and is not replaced`() = runTest {
-        remoteSource.resultsByCategory[CatalogCategory.SKIN] =
-            CatalogFetchResult.Failure(CatalogFetchError.Network)
-        remoteSource.resultsByCategory[CatalogCategory.STICKER] =
-            CatalogFetchResult.Success(listOf(catalogItem("Sticker | Shooter", CatalogCategory.STICKER)))
+    fun `chunks are inserted as they arrive, in order`() = runTest {
+        val firstChunk = listOf(catalogItem("AK-47 | Redline", CatalogCategory.SKIN))
+        val secondChunk = listOf(catalogItem("AWP | Asiimov", CatalogCategory.SKIN))
+        remoteSource.chunksByCategory[CatalogCategory.SKIN] = listOf(firstChunk, secondChunk)
 
         newInteractor().invoke()
 
-        assertTrue(catalogRepository.replaceCategoryCalls.none { it.first == CatalogCategory.SKIN })
-        assertTrue(catalogRepository.replaceCategoryCalls.any { it.first == CatalogCategory.STICKER })
+        val skinInserts = catalogRepository.insertItemsCalls.filter { it.first == CatalogCategory.SKIN }
+        assertEquals(listOf(firstChunk, secondChunk), skinInserts.map { it.second })
+    }
+
+    @Test
+    fun `a category whose fetch fails with zero chunks leaves its previously cached rows untouched`() = runTest {
+        remoteSource.resultsByCategory[CatalogCategory.SKIN] = CatalogFetchResult.Failure(CatalogFetchError.Network)
+        remoteSource.chunksByCategory[CatalogCategory.STICKER] =
+            listOf(listOf(catalogItem("Sticker | Shooter", CatalogCategory.STICKER)))
+
+        newInteractor().invoke()
+
+        assertTrue(catalogRepository.clearCategoryCalls.none { it == CatalogCategory.SKIN })
+        assertTrue(catalogRepository.insertItemsCalls.none { it.first == CatalogCategory.SKIN })
+        assertTrue(catalogRepository.insertItemsCalls.any { it.first == CatalogCategory.STICKER })
         assertEquals(1, catalogSyncStatusRepository.markCompletedCalls.size)
     }
 

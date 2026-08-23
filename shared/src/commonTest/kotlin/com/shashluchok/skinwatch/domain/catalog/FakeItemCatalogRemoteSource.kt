@@ -5,13 +5,18 @@ import kotlin.time.Duration
 
 internal class FakeItemCatalogRemoteSource : ItemCatalogRemoteSource {
     val fetchCalls = mutableListOf<CatalogCategory>()
-    val resultsByCategory = mutableMapOf<CatalogCategory, CatalogFetchResult<List<CatalogItem>>>()
-    var defaultResult: CatalogFetchResult<List<CatalogItem>> = CatalogFetchResult.Success(emptyList())
+    val chunksByCategory = mutableMapOf<CatalogCategory, List<List<CatalogItem>>>()
+    val resultsByCategory = mutableMapOf<CatalogCategory, CatalogFetchResult<Unit>>()
+    var defaultResult: CatalogFetchResult<Unit> = CatalogFetchResult.Success(Unit)
     var delayDuration: Duration = Duration.ZERO
 
-    override suspend fun fetch(category: CatalogCategory): CatalogFetchResult<List<CatalogItem>> {
+    override suspend fun fetch(
+        category: CatalogCategory,
+        onChunk: suspend (List<CatalogItem>) -> Unit,
+    ): CatalogFetchResult<Unit> {
         fetchCalls += category
         if (delayDuration > Duration.ZERO) delay(delayDuration)
+        chunksByCategory[category]?.forEach { chunk -> onChunk(chunk) }
         return resultsByCategory[category] ?: defaultResult
     }
 }

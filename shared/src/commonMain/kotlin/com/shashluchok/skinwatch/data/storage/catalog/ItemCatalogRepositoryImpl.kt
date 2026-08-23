@@ -9,8 +9,10 @@ internal class ItemCatalogRepositoryImpl(
 ) : ItemCatalogRepository {
     override suspend fun search(query: String): List<CatalogItem> = dao.search(query).map { it.toDomain() }
 
-    override suspend fun replaceCategory(category: CatalogCategory, items: List<CatalogItem>) =
-        dao.replaceCategory(category = category.ordinal, items = items.map { it.toEntity() })
+    override suspend fun clearCategory(category: CatalogCategory) = dao.deleteByCategory(category.ordinal)
+
+    override suspend fun insertItems(category: CatalogCategory, items: List<CatalogItem>) =
+        dao.insertAll(items.map { it.toEntity() })
 
     override suspend fun isEmpty(): Boolean = dao.count() == 0
 

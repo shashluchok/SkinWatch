@@ -28,12 +28,20 @@ internal class SyncCatalogItemsInteractor(
             mutableIsSyncing.value = true
             var anySucceeded = false
             CatalogCategory.entries.forEach { category ->
-                val result = remoteSource.fetch(category)
-                if (result is CatalogFetchResult.Success) {
-                    catalogRepository.replaceCategory(category = category, items = result.data)
-                    anySucceeded = true
+                var isFirstChunk = true
+                val result = remoteSource.fetch(category) { chunk ->
+                    // Old rows are cleared only once the first chunk actually arrives, not before
+                    // the fetch starts -- a fetch that fails immediately leaves previously cached
+                    // rows for this category untouched instead of wiping them for nothing.
+                    if (isFirstChunk) {
+                        catalogRepository.clearCategory(category)
+                        isFirstChunk = false
+                    }
+                    catalogRepository.insertItems(category = category, items = chunk)
                 }
-                // Failure: skip this category, keep its previously cached rows, continue with the rest.
+                if (result is CatalogFetchResult.Success) anySucceeded = true
+                // Failure: skip the rest of this category, keep whatever rows it already has
+                // (previously cached, or partially inserted from this run), continue with the rest.
             }
             if (anySucceeded) catalogSyncStatusRepository.markCompleted(Clock.System.now())
         } finally {

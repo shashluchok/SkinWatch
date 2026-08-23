@@ -7,24 +7,44 @@ import com.shashluchok.skinwatch.domain.catalog.CatalogFetchResult
 import com.shashluchok.skinwatch.domain.catalog.CatalogItem
 import com.shashluchok.skinwatch.domain.catalog.ItemCatalogRemoteSource
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ServerResponseException
-import io.ktor.client.request.get
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.io.decodeSourceToSequence
 
 private const val BASE_URL = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en"
+
+// Kept small so at most this many parsed entries (plus one small IO buffer) are ever live in
+// memory at once, regardless of how large a category's source file is.
+private const val CHUNK_SIZE = 500
+
+private val catalogJson = Json { ignoreUnknownKeys = true }
 
 internal class KtorItemCatalogApi(
     private val httpClient: HttpClient,
 ) : ItemCatalogRemoteSource {
-    override suspend fun fetch(category: CatalogCategory): CatalogFetchResult<List<CatalogItem>> = runCatching {
-        httpClient.get("$BASE_URL/${category.fileName}.json").body<List<CatalogEntryDto>>()
+    @OptIn(ExperimentalSerializationApi::class)
+    override suspend fun fetch(
+        category: CatalogCategory,
+        onChunk: suspend (List<CatalogItem>) -> Unit,
+    ): CatalogFetchResult<Unit> = runCatching {
+        httpClient.prepareGet("$BASE_URL/${category.fileName}.json").execute { response: HttpResponse ->
+            val source = response.bodyAsChannel().toJsonSource()
+            catalogJson
+                .decodeSourceToSequence<CatalogEntryDto>(source)
+                .chunked(CHUNK_SIZE)
+                .forEach { entries -> onChunk(entries.toCatalogItems(category)) }
+        }
     }.fold(
-        onSuccess = { entries -> CatalogFetchResult.Success(entries.toCatalogItems(category)) },
+        onSuccess = { CatalogFetchResult.Success(Unit) },
         onFailure = { CatalogFetchResult.Failure(it.toCatalogFetchError()) },
     )
 

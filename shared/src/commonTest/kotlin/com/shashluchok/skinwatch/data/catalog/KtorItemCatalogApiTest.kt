@@ -2,20 +2,17 @@ package com.shashluchok.skinwatch.data.catalog
 
 import com.shashluchok.skinwatch.domain.catalog.CatalogCategory
 import com.shashluchok.skinwatch.domain.catalog.CatalogFetchResult
+import com.shashluchok.skinwatch.domain.catalog.CatalogItem
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -34,6 +31,14 @@ class KtorItemCatalogApiTest {
         ]
         """.trimIndent()
 
+    private fun manyEntriesJson(count: Int): String {
+        val entries = (1..count).joinToString(separator = ",") { index ->
+            """{"id":"skin-$index","name":"Skin $index","market_hash_name":"Skin $index",""" +
+                """"image":"https://example.com/$index.png"}"""
+        }
+        return "[$entries]"
+    }
+
     private fun apiWithFixedResponse(
         json: String,
         status: HttpStatusCode = HttpStatusCode.OK,
@@ -45,8 +50,9 @@ class KtorItemCatalogApiTest {
                     status = status,
                     // raw.githubusercontent.com serves .json files as text/plain, not
                     // application/json (confirmed live) -- the mock mirrors that, not the
-                    // "obviously correct" content type, so this test actually catches a
-                    // ContentNegotiation misconfiguration instead of masking it.
+                    // "obviously correct" content type. Manual decoding no longer relies on
+                    // ContentNegotiation's content-type matching, so this just documents the
+                    // real-world response shape rather than exercising a code path.
                     headers = headersOf(HttpHeaders.ContentType, "text/plain; charset=utf-8"),
                 )
             } else {
@@ -55,11 +61,6 @@ class KtorItemCatalogApiTest {
         }
         val httpClient = HttpClient(mockEngine) {
             expectSuccess = true
-            install(ContentNegotiation) {
-                val catalogJson = Json { ignoreUnknownKeys = true }
-                json(catalogJson)
-                json(catalogJson, contentType = ContentType.Text.Plain)
-            }
             install(HttpTimeout)
             install(HttpRequestRetry) { maxRetries = 0 }
         }
@@ -69,16 +70,18 @@ class KtorItemCatalogApiTest {
     @Test
     fun `fetch decodes entries and drops ones with a null market_hash_name`() = runTest {
         val api = apiWithFixedResponse(skinsJson)
+        val chunks = mutableListOf<List<CatalogItem>>()
 
-        val result = api.fetch(CatalogCategory.SKIN)
+        val result = api.fetch(CatalogCategory.SKIN) { chunk -> chunks += chunk }
 
         assertTrue(result is CatalogFetchResult.Success)
-        assertEquals(1, result.data.size)
-        assertEquals("AK-47 | Redline (Field-Tested)", result.data.single().marketHashName)
-        assertEquals(CatalogCategory.SKIN, result.data.single().category)
+        val items = chunks.flatten()
+        assertEquals(1, items.size)
+        assertEquals("AK-47 | Redline (Field-Tested)", items.single().marketHashName)
+        assertEquals(CatalogCategory.SKIN, items.single().category)
         assertEquals(
             "https://community.akamai.steamstatic.com/economy/image/abc123",
-            result.data.single().iconUrl,
+            items.single().iconUrl,
         )
     }
 
@@ -86,8 +89,22 @@ class KtorItemCatalogApiTest {
     fun `fetch maps a non-2xx response to a Failure`() = runTest {
         val api = apiWithFixedResponse(json = "", status = HttpStatusCode.NotFound)
 
-        val result = api.fetch(CatalogCategory.SKIN)
+        val result = api.fetch(CatalogCategory.SKIN) { }
 
         assertTrue(result is CatalogFetchResult.Failure)
+    }
+
+    @Test
+    fun `fetch streams entries across more than one chunk instead of one giant chunk`() = runTest {
+        val entryCount = 1200
+        val api = apiWithFixedResponse(manyEntriesJson(entryCount))
+        val chunks = mutableListOf<List<CatalogItem>>()
+
+        val result = api.fetch(CatalogCategory.SKIN) { chunk -> chunks += chunk }
+
+        assertTrue(result is CatalogFetchResult.Success)
+        assertTrue(chunks.size > 1, "expected more than one chunk for $entryCount entries, got ${chunks.size}")
+        assertTrue(chunks.all { it.size <= 500 }, "no single chunk should hold the whole response in memory")
+        assertEquals(entryCount, chunks.sumOf { it.size })
     }
 }

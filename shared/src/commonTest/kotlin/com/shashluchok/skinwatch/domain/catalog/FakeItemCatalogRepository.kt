@@ -1,7 +1,8 @@
 package com.shashluchok.skinwatch.domain.catalog
 
 internal class FakeItemCatalogRepository : ItemCatalogRepository {
-    val replaceCategoryCalls = mutableListOf<Pair<CatalogCategory, List<CatalogItem>>>()
+    val clearCategoryCalls = mutableListOf<CatalogCategory>()
+    val insertItemsCalls = mutableListOf<Pair<CatalogCategory, List<CatalogItem>>>()
     val searchCalls = mutableListOf<String>()
     var searchResult: List<CatalogItem> = emptyList()
     var emptyResult = true
@@ -11,8 +12,12 @@ internal class FakeItemCatalogRepository : ItemCatalogRepository {
         return searchResult
     }
 
-    override suspend fun replaceCategory(category: CatalogCategory, items: List<CatalogItem>) {
-        replaceCategoryCalls += category to items
+    override suspend fun clearCategory(category: CatalogCategory) {
+        clearCategoryCalls += category
+    }
+
+    override suspend fun insertItems(category: CatalogCategory, items: List<CatalogItem>) {
+        insertItemsCalls += category to items
     }
 
     override suspend fun isEmpty(): Boolean = emptyResult

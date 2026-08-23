@@ -31,7 +31,7 @@ class ItemCatalogRepositoryImplTest {
         val repository = newRepository()
         assertTrue(repository.isEmpty())
 
-        repository.replaceCategory(
+        repository.insertItems(
             category = CatalogCategory.SKIN,
             items = listOf(item("AK-47 | Redline", CatalogCategory.SKIN)),
         )
@@ -42,7 +42,7 @@ class ItemCatalogRepositoryImplTest {
     @Test
     fun `search finds a substring match case-insensitively`() = runTest {
         val repository = newRepository()
-        repository.replaceCategory(
+        repository.insertItems(
             category = CatalogCategory.SKIN,
             items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
         )
@@ -56,7 +56,7 @@ class ItemCatalogRepositoryImplTest {
     @Test
     fun `search with no match returns an empty list`() = runTest {
         val repository = newRepository()
-        repository.replaceCategory(
+        repository.insertItems(
             category = CatalogCategory.SKIN,
             items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
         )
@@ -65,20 +65,37 @@ class ItemCatalogRepositoryImplTest {
     }
 
     @Test
-    fun `replaceCategory only replaces rows of that category, others are untouched`() = runTest {
+    fun `clearCategory only removes rows of that category, others are untouched`() = runTest {
         val repository = newRepository()
-        repository.replaceCategory(
+        repository.insertItems(
             category = CatalogCategory.SKIN,
             items = listOf(item("AK-47 | Redline", CatalogCategory.SKIN)),
         )
-        repository.replaceCategory(
+        repository.insertItems(
             category = CatalogCategory.STICKER,
             items = listOf(item("Sticker | Shooter", CatalogCategory.STICKER)),
         )
 
-        repository.replaceCategory(category = CatalogCategory.SKIN, items = emptyList())
+        repository.clearCategory(CatalogCategory.SKIN)
 
         assertEquals(emptyList(), repository.search("Redline"))
         assertEquals(1, repository.search("Shooter").size)
+    }
+
+    @Test
+    fun `insertItems accumulates across multiple chunks of the same category`() = runTest {
+        val repository = newRepository()
+
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(item("AK-47 | Redline", CatalogCategory.SKIN)),
+        )
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(item("AWP | Asiimov", CatalogCategory.SKIN)),
+        )
+
+        assertEquals(1, repository.search("Redline").size)
+        assertEquals(1, repository.search("Asiimov").size)
     }
 }
