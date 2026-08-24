@@ -105,6 +105,8 @@ kotlin {
             implementation(libs.coil.compose)
             implementation(libs.coil.networkKtor3)
             implementation(libs.vico.composeM3)
+            implementation(libs.haze.core)
+            implementation(libs.haze.blur)
             implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.cio)

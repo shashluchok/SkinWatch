@@ -30,11 +30,13 @@ import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncSta
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
+import dev.chrisbanes.haze.HazeState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 internal fun InventoryScreen(
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
     onScrollingUp: (Boolean) -> Unit = {},
     viewModel: InventoryViewModel = koinViewModel(),
@@ -45,6 +47,7 @@ internal fun InventoryScreen(
         state = state,
         onAction = viewModel::onAction,
         onScrollingUp = onScrollingUp,
+        hazeState = hazeState,
     )
 }
 
@@ -53,6 +56,7 @@ private fun InventoryScreen(
     state: InventoryViewModel.State,
     onAction: (InventoryViewModel.Action) -> Unit,
     onScrollingUp: (Boolean) -> Unit,
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -113,6 +117,7 @@ private fun InventoryScreen(
     state.editSheet?.let { sheet ->
         EditItemBottomSheet(
             sheet = sheet,
+            hazeState = hazeState,
             onQuantityChange = { onAction(InventoryViewModel.Action.OnQuantityChanged(it)) },
             onPurchasePriceChange = { onAction(InventoryViewModel.Action.OnPurchasePriceChanged(it)) },
             onSaveClick = { onAction(InventoryViewModel.Action.OnSaveClick) },
@@ -126,6 +131,7 @@ private fun InventoryScreen(
     state.priceHistorySheet?.let { sheet ->
         PriceHistoryBottomSheet(
             sheet = sheet,
+            hazeState = hazeState,
             onDismiss = { onAction(InventoryViewModel.Action.OnDismissPriceHistorySheet) },
         )
     }
