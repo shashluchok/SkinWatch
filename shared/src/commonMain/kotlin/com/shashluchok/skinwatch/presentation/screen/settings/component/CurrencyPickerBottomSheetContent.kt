@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
-import com.shashluchok.skinwatch.presentation.component.PartialHeightModalBottomSheet
 import com.shashluchok.skinwatch.presentation.screen.settings.currencyLabel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
@@ -22,42 +21,41 @@ import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_auto_o
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_picker__title
 import org.jetbrains.compose.resources.stringResource
 
+/** Content of the currency picker bottom sheet. */
 @Composable
-internal fun CurrencyPickerBottomSheet(
+internal fun CurrencyPickerBottomSheetContent(
     selectedCurrency: SteamCurrency?,
     resolvedAutoCurrency: SteamCurrency,
     onOptionSelect: (SteamCurrency?) -> Unit,
-    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
 
-    PartialHeightModalBottomSheet(
-        onDismissRequest = onDismiss,
-        modifier = modifier.testTag(CurrencyPickerBottomSheet.Tag.ROOT),
+    Column(
+        modifier = modifier
+            .testTag(CurrencyPickerBottomSheetContent.Tag.ROOT)
+            .padding(dimens.padding.medium),
     ) {
-        Column(modifier = Modifier.padding(dimens.padding.medium)) {
-            Text(
-                text = stringResource(Res.string.dev__screen_settings__currency_picker__title),
-                style = MaterialTheme.typography.titleLarge,
-            )
+        Text(
+            text = stringResource(Res.string.dev__screen_settings__currency_picker__title),
+            style = MaterialTheme.typography.titleLarge,
+        )
+        CurrencyOptionRow(
+            label = stringResource(
+                Res.string.dev__screen_settings__currency_auto_option,
+                stringResource(currencyLabel(resolvedAutoCurrency)),
+            ),
+            isSelected = selectedCurrency == null,
+            onClick = { onOptionSelect(null) },
+            testTag = CurrencyPickerBottomSheetContent.Tag.AUTO_OPTION,
+        )
+        SteamCurrency.entries.forEach { currency ->
             CurrencyOptionRow(
-                label = stringResource(
-                    Res.string.dev__screen_settings__currency_auto_option,
-                    stringResource(currencyLabel(resolvedAutoCurrency)),
-                ),
-                isSelected = selectedCurrency == null,
-                onClick = { onOptionSelect(null) },
-                testTag = CurrencyPickerBottomSheet.Tag.AUTO_OPTION,
+                label = stringResource(currencyLabel(currency)),
+                isSelected = selectedCurrency == currency,
+                onClick = { onOptionSelect(currency) },
+                testTag = "${CurrencyPickerBottomSheetContent.Tag.OPTION_PREFIX}${currency.name}",
             )
-            SteamCurrency.entries.forEach { currency ->
-                CurrencyOptionRow(
-                    label = stringResource(currencyLabel(currency)),
-                    isSelected = selectedCurrency == currency,
-                    onClick = { onOptionSelect(currency) },
-                    testTag = "${CurrencyPickerBottomSheet.Tag.OPTION_PREFIX}${currency.name}",
-                )
-            }
         }
     }
 }
@@ -89,9 +87,9 @@ private fun CurrencyOptionRow(
     }
 }
 
-internal object CurrencyPickerBottomSheet {
+internal object CurrencyPickerBottomSheetContent {
     object Tag {
-        const val ROOT = "CurrencyPickerBottomSheet"
+        const val ROOT = "CurrencyPickerBottomSheetContent"
         const val AUTO_OPTION = "$ROOT.autoOption"
         const val OPTION_PREFIX = "$ROOT.option."
     }

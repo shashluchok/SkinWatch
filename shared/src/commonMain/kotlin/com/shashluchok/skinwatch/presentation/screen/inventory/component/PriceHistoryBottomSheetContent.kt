@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
-import com.shashluchok.skinwatch.presentation.component.PartialHeightModalBottomSheet
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewModel
 import com.shashluchok.skinwatch.presentation.theme.AppFontFamilies
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
@@ -52,10 +51,10 @@ private val emptyStateGlyphPoints = listOf(
     Offset(x = 1f, y = 0.15f),
 )
 
+/** Content of the price-history bottom sheet */
 @Composable
-internal fun PriceHistoryBottomSheet(
+internal fun PriceHistoryBottomSheetContent(
     sheet: InventoryViewModel.PriceHistorySheetState,
-    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
@@ -63,42 +62,39 @@ internal fun PriceHistoryBottomSheet(
     // count as a "data point" for the 0/1/2+ branch below (see design addendum section 7).
     val pricedSnapshots = sheet.snapshots.filter { it.lowestPrice != null }
 
-    PartialHeightModalBottomSheet(
-        onDismissRequest = onDismiss,
-        modifier = modifier.testTag(PriceHistoryBottomSheet.Tag.ROOT),
-    ) {
-        Column(
-            modifier = Modifier.padding(
+    Column(
+        modifier = modifier
+            .testTag(PriceHistoryBottomSheetContent.Tag.ROOT)
+            .padding(
                 horizontal = dimens.padding.medium,
                 vertical = dimens.padding.medium,
             ),
-        ) {
-            Text(
-                text = stringResource(Res.string.dev__screen_inventory__price_history_sheet__title),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                modifier = Modifier.padding(top = dimens.padding.tiny),
-                text = sheet.item.marketHashName,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = dimens.padding.medium),
-                color = MaterialTheme.colorScheme.outlineVariant,
-            )
+    ) {
+        Text(
+            text = stringResource(Res.string.dev__screen_inventory__price_history_sheet__title),
+            style = MaterialTheme.typography.titleLarge,
+        )
+        Text(
+            modifier = Modifier.padding(top = dimens.padding.tiny),
+            text = sheet.item.marketHashName,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = dimens.padding.medium),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
 
-            when {
-                pricedSnapshots.isEmpty() -> EmptyPriceHistory()
-                pricedSnapshots.size == 1 -> SinglePricePoint(
-                    snapshot = pricedSnapshots.single(),
-                    purchasePrice = sheet.item.purchasePrice,
-                )
-                else -> PriceHistoryChart(
-                    snapshots = pricedSnapshots,
-                    purchasePrice = sheet.item.purchasePrice,
-                )
-            }
+        when {
+            pricedSnapshots.isEmpty() -> EmptyPriceHistory()
+            pricedSnapshots.size == 1 -> SinglePricePoint(
+                snapshot = pricedSnapshots.single(),
+                purchasePrice = sheet.item.purchasePrice,
+            )
+            else -> PriceHistoryChart(
+                snapshots = pricedSnapshots,
+                purchasePrice = sheet.item.purchasePrice,
+            )
         }
     }
 }
@@ -115,7 +111,7 @@ private fun EmptyPriceHistory() {
         EmptyStateGlyph(
             modifier = Modifier
                 .size(dimens.iconSize.extraLarge)
-                .testTag(PriceHistoryBottomSheet.Tag.EMPTY_STATE),
+                .testTag(PriceHistoryBottomSheetContent.Tag.EMPTY_STATE),
         )
         Text(
             modifier = Modifier.padding(top = dimens.padding.small),
@@ -150,7 +146,7 @@ private fun SinglePricePoint(
     val dimens = LocalDimens.current
     Column(modifier = Modifier.padding(top = dimens.padding.extraLarge)) {
         Text(
-            modifier = Modifier.testTag(PriceHistoryBottomSheet.Tag.SINGLE_POINT_VALUE),
+            modifier = Modifier.testTag(PriceHistoryBottomSheetContent.Tag.SINGLE_POINT_VALUE),
             text = snapshot.lowestPrice?.let(::formatMoney).orEmpty(),
             style = MaterialTheme.typography.headlineSmall
                 .copy(fontFamily = AppFontFamilies.jetBrainsMono)
@@ -245,9 +241,9 @@ private fun formatMoney(money: Money): String {
     return "$major ${money.currency.name}"
 }
 
-internal object PriceHistoryBottomSheet {
+internal object PriceHistoryBottomSheetContent {
     object Tag {
-        const val ROOT = "PriceHistoryBottomSheet"
+        const val ROOT = "PriceHistoryBottomSheetContent"
         const val EMPTY_STATE = "$ROOT.emptyState"
         const val SINGLE_POINT_VALUE = "$ROOT.singlePointValue"
         const val CHART = "$ROOT.chart"

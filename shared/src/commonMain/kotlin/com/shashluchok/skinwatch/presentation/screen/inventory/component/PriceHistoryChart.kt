@@ -124,7 +124,7 @@ private fun PriceHistoryChartHost(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(CHART_HEIGHT_DP.dp)
-                .testTag(PriceHistoryBottomSheet.Tag.CHART),
+                .testTag(PriceHistoryBottomSheetContent.Tag.CHART),
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(lineProvider = priceHistoryLineProvider()),
                 startAxis = priceHistoryStartAxis(labelStyle = axisLabelStyle),

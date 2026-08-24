@@ -19,7 +19,6 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.shashluchok.skinwatch.domain.catalog.CatalogItem
 import com.shashluchok.skinwatch.presentation.component.ItemDetailsForm
-import com.shashluchok.skinwatch.presentation.component.PartialHeightModalBottomSheet
 import com.shashluchok.skinwatch.presentation.screen.main.MainViewModel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
@@ -33,8 +32,9 @@ import org.jetbrains.compose.resources.stringResource
 
 private const val ADD_ITEM_BOTTOM_SHEET_STEP_LABEL = "AddItemBottomSheetStep"
 
+/** Content of the add-item bottom sheet. */
 @Composable
-internal fun AddItemBottomSheet(
+internal fun AddItemBottomSheetContent(
     sheet: MainViewModel.AddSheetState,
     onQueryChange: (String) -> Unit,
     onResultSelect: (CatalogItem) -> Unit,
@@ -42,33 +42,28 @@ internal fun AddItemBottomSheet(
     onQuantityChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
     onSaveClick: () -> Unit,
-    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    PartialHeightModalBottomSheet(
-        onDismissRequest = onDismiss,
-        modifier = modifier.testTag(AddItemBottomSheet.Tag.ROOT),
-    ) {
-        AnimatedContent(
-            targetState = sheet,
-            contentKey = { it::class },
-            label = ADD_ITEM_BOTTOM_SHEET_STEP_LABEL,
-        ) { targetSheet ->
-            when (targetSheet) {
-                is MainViewModel.AddSheetState.AddSearch -> AddSearchStep(
-                    sheet = targetSheet,
-                    onQueryChange = onQueryChange,
-                    onResultSelect = onResultSelect,
-                )
+    AnimatedContent(
+        modifier = modifier.testTag(AddItemBottomSheetContent.Tag.ROOT),
+        targetState = sheet,
+        contentKey = { it::class },
+        label = ADD_ITEM_BOTTOM_SHEET_STEP_LABEL,
+    ) { targetSheet ->
+        when (targetSheet) {
+            is MainViewModel.AddSheetState.AddSearch -> AddSearchStep(
+                sheet = targetSheet,
+                onQueryChange = onQueryChange,
+                onResultSelect = onResultSelect,
+            )
 
-                is MainViewModel.AddSheetState.AddDetails -> AddDetailsStep(
-                    sheet = targetSheet,
-                    onBackClick = onBackClick,
-                    onQuantityChange = onQuantityChange,
-                    onPurchasePriceChange = onPurchasePriceChange,
-                    onSaveClick = onSaveClick,
-                )
-            }
+            is MainViewModel.AddSheetState.AddDetails -> AddDetailsStep(
+                sheet = targetSheet,
+                onBackClick = onBackClick,
+                onQuantityChange = onQuantityChange,
+                onPurchasePriceChange = onPurchasePriceChange,
+                onSaveClick = onSaveClick,
+            )
         }
     }
 }
@@ -90,7 +85,7 @@ private fun AddSearchStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = dimens.padding.small)
-                .testTag(AddItemBottomSheet.Tag.SEARCH_QUERY_FIELD),
+                .testTag(AddItemBottomSheetContent.Tag.SEARCH_QUERY_FIELD),
             value = sheet.query,
             onValueChange = onQueryChange,
             label = { Text(text = stringResource(Res.string.dev__screen_inventory__add_search__query_placeholder)) },
@@ -108,7 +103,7 @@ private fun AddSearchStep(
                 LazyColumn(
                     modifier = Modifier
                         .padding(top = dimens.padding.small)
-                        .testTag(AddItemBottomSheet.Tag.SEARCH_RESULTS_LIST),
+                        .testTag(AddItemBottomSheetContent.Tag.SEARCH_RESULTS_LIST),
                 ) {
                     items(items = status.results, key = { it.marketHashName }) { result ->
                         SearchResultRow(
@@ -161,7 +156,7 @@ private fun AddDetailsStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = dimens.padding.small)
-                .testTag(AddItemBottomSheet.Tag.SAVE_BUTTON),
+                .testTag(AddItemBottomSheetContent.Tag.SAVE_BUTTON),
             onClick = onSaveClick,
         ) {
             Text(text = stringResource(Res.string.dev__screen_inventory__item_form__save_button))
@@ -169,9 +164,9 @@ private fun AddDetailsStep(
     }
 }
 
-internal object AddItemBottomSheet {
+internal object AddItemBottomSheetContent {
     object Tag {
-        const val ROOT = "AddItemBottomSheet"
+        const val ROOT = "AddItemBottomSheetContent"
         const val SEARCH_QUERY_FIELD = "$ROOT.searchQueryField"
         const val SEARCH_RESULTS_LIST = "$ROOT.searchResultsList"
         const val SAVE_BUTTON = "$ROOT.saveButton"

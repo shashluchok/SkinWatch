@@ -57,7 +57,7 @@ Compose:
     active: true
   CompositionLocalAllowlist:
     active: true
-    allowedCompositionLocals: LocalDimens, LocalSemanticColors, LocalMotion
+    allowedCompositionLocals: LocalDimens, LocalSemanticColors, LocalMotion, LocalBottomSheetHost
   CompositionLocalNaming:
     active: true
   ContentEmitterReturningValues:

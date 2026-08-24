@@ -20,9 +20,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -35,16 +35,22 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetHostImpl
+import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetRequest
+import com.shashluchok.skinwatch.presentation.component.bottomsheet.LocalBottomSheetHost
+import com.shashluchok.skinwatch.presentation.component.bottomsheet.PartialHeightModalBottomSheet
 import com.shashluchok.skinwatch.presentation.navigation.config.navigationConfig
 import com.shashluchok.skinwatch.presentation.navigation.destination.Inventory
 import com.shashluchok.skinwatch.presentation.navigation.navtab.GlowIcon
 import com.shashluchok.skinwatch.presentation.navigation.navtab.NavTab
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryScreen
 import com.shashluchok.skinwatch.presentation.screen.main.component.AddFab
-import com.shashluchok.skinwatch.presentation.screen.main.component.AddItemBottomSheet
+import com.shashluchok.skinwatch.presentation.screen.main.component.AddItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.settings.SettingsScreen
 import com.shashluchok.skinwatch.presentation.screen.watchlist.WatchlistScreen
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -65,7 +71,6 @@ internal fun MainScreen(
     )
 }
 
-@Suppress("UnusedParameter")
 @Composable
 private fun MainScreen(
     state: MainViewModel.State,
@@ -77,8 +82,7 @@ private fun MainScreen(
         elements = arrayOf(Inventory),
     )
     val pagerState = rememberPagerState(pageCount = { enabledNavTabs.size })
-    val currentTab = enabledNavTabs.first { it.destination == backStack.lastOrNull() }
-    var isFabVisible by remember { mutableStateOf(true) }
+    val bottomSheetHost = remember { BottomSheetHostImpl() }
 
     SyncPagerWithBackStack(
         backStack = backStack,
@@ -86,62 +90,89 @@ private fun MainScreen(
     )
     NavigateToInventoryOnBack(backStack = backStack)
 
-    Scaffold(
-        modifier = modifier.testTag(MainScreen.Tag.ROOT),
-        topBar = {
-            TopAppBar(
-                modifier = Modifier.testTag(MainScreen.Tag.TOP_BAR),
-                title = { Text(text = stringResource(currentTab.labelRes)) },
-            )
-        },
-        bottomBar = { MainNavigationBar(backStack = backStack) },
-        floatingActionButton = {
-            MainFab(
-                visible = currentTab == NavTab.INVENTORY && isFabVisible,
-                onClick = { onAction(MainViewModel.Action.OnAddClick) },
-            )
-        },
-    ) { contentPadding ->
-        val motion = LocalMotion.current
+    CompositionLocalProvider(LocalBottomSheetHost provides bottomSheetHost) {
+        val hazeState = rememberHazeState()
+        val currentTab = enabledNavTabs.first { it.destination == backStack.lastOrNull() }
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPadding),
-        ) { page ->
-            val isSettledActive = !pagerState.isScrollInProgress
-            val scale by animateFloatAsState(
-                targetValue = if (isSettledActive) 1f else PAGER_UNSETTLED_SCALE,
-                animationSpec = tween(
-                    durationMillis = if (isSettledActive) motion.duration.standard else motion.duration.instant,
-                ),
-            )
+        Scaffold(
+            modifier = modifier.testTag(MainScreen.Tag.ROOT).hazeSource(hazeState),
+            topBar = {
+                TopAppBar(
+                    modifier = Modifier.testTag(MainScreen.Tag.TOP_BAR),
+                    title = { Text(text = stringResource(currentTab.labelRes)) },
+                )
+            },
+            bottomBar = { MainNavigationBar(backStack = backStack) },
+            floatingActionButton = {
+                MainFab(
+                    visible = currentTab == NavTab.INVENTORY,
+                    onClick = { onAction(MainViewModel.Action.OnAddClick) },
+                )
+            },
+        ) { contentPadding ->
+            val motion = LocalMotion.current
 
-            enabledNavTabs[page].ScreenContent(
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
-                onAddVisibilityChange = { isFabVisible = it },
-            )
+                    .padding(contentPadding),
+            ) { page ->
+                val isSettledActive = !pagerState.isScrollInProgress
+                val scale by animateFloatAsState(
+                    targetValue = if (isSettledActive) 1f else PAGER_UNSETTLED_SCALE,
+                    animationSpec = tween(
+                        durationMillis = if (isSettledActive) motion.duration.standard else motion.duration.instant,
+                    ),
+                )
+
+                enabledNavTabs[page].ScreenContent(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        },
+                )
+            }
+        }
+
+        state.addSheet?.let { sheet ->
+            RegisterAddSheet(sheet = sheet, onAction = onAction)
+        }
+
+        bottomSheetHost.currentRequest?.let { request ->
+            PartialHeightModalBottomSheet(
+                onDismissRequest = request.onDismissRequest,
+                hazeState = hazeState,
+            ) {
+                request.content()
+            }
         }
     }
+}
 
-    state.addSheet?.let { sheet ->
-        AddItemBottomSheet(
-            sheet = sheet,
-            onQueryChange = { onAction(MainViewModel.Action.OnSearchQueryChanged(it)) },
-            onResultSelect = { onAction(MainViewModel.Action.OnSearchResultSelected(it)) },
-            onBackClick = { onAction(MainViewModel.Action.OnAddDetailsBackClick) },
-            onQuantityChange = { onAction(MainViewModel.Action.OnQuantityChanged(it)) },
-            onPurchasePriceChange = { onAction(MainViewModel.Action.OnPurchasePriceChanged(it)) },
-            onSaveClick = { onAction(MainViewModel.Action.OnSaveClick) },
-            onDismiss = { onAction(MainViewModel.Action.OnDismissSheet) },
-        )
-    }
+@Composable
+private fun RegisterAddSheet(
+    sheet: MainViewModel.AddSheetState,
+    onAction: (MainViewModel.Action) -> Unit,
+) {
+    LocalBottomSheetHost.current.Show(
+        BottomSheetRequest(
+            onDismissRequest = { onAction(MainViewModel.Action.OnDismissSheet) },
+            content = {
+                AddItemBottomSheetContent(
+                    sheet = sheet,
+                    onQueryChange = { onAction(MainViewModel.Action.OnSearchQueryChanged(it)) },
+                    onResultSelect = { onAction(MainViewModel.Action.OnSearchResultSelected(it)) },
+                    onBackClick = { onAction(MainViewModel.Action.OnAddDetailsBackClick) },
+                    onQuantityChange = { onAction(MainViewModel.Action.OnQuantityChanged(it)) },
+                    onPurchasePriceChange = { onAction(MainViewModel.Action.OnPurchasePriceChanged(it)) },
+                    onSaveClick = { onAction(MainViewModel.Action.OnSaveClick) },
+                )
+            },
+        ),
+    )
 }
 
 @Composable
@@ -231,10 +262,9 @@ private fun NavigateToInventoryOnBack(backStack: NavBackStack<NavKey>) {
 @Composable
 private fun NavTab.ScreenContent(
     modifier: Modifier = Modifier,
-    onAddVisibilityChange: (Boolean) -> Unit = {},
 ) {
     when (this) {
-        NavTab.INVENTORY -> InventoryScreen(modifier = modifier, onScrollingUp = onAddVisibilityChange)
+        NavTab.INVENTORY -> InventoryScreen(modifier = modifier)
         NavTab.WATCHLIST -> WatchlistScreen(modifier = modifier)
         NavTab.SETTINGS -> SettingsScreen(modifier = modifier)
     }

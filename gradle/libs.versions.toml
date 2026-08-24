@@ -41,6 +41,9 @@ kotlinx-datetime = "0.8.0"
 # Animation
 compottie = "2.2.4"
 
+# Effects
+haze = "2.0.0-beta01"
+
 # Charts
 vico = "3.3.0"
 
@@ -101,6 +104,10 @@ navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui",
 compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "compottie" }
 
 vico-composeM3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
+
+# Effects
+haze-core = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 
 # Images
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }

@@ -11,8 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetRequest
+import com.shashluchok.skinwatch.presentation.component.bottomsheet.LocalBottomSheetHost
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyChangeConfirmationDialog
-import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheet
+import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheetContent
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_auto_option
@@ -64,11 +66,17 @@ private fun SettingsScreen(
     }
 
     if (state.isCurrencyPickerVisible) {
-        CurrencyPickerBottomSheet(
-            selectedCurrency = state.selectedCurrency,
-            resolvedAutoCurrency = state.resolvedAutoCurrency,
-            onOptionSelect = { onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(it)) },
-            onDismiss = { onAction(SettingsViewModel.Action.OnDismissCurrencyPicker) },
+        LocalBottomSheetHost.current.Show(
+            BottomSheetRequest(
+                onDismissRequest = { onAction(SettingsViewModel.Action.OnDismissCurrencyPicker) },
+                content = {
+                    CurrencyPickerBottomSheetContent(
+                        selectedCurrency = state.selectedCurrency,
+                        resolvedAutoCurrency = state.resolvedAutoCurrency,
+                        onOptionSelect = { onAction(SettingsViewModel.Action.OnCurrencyOptionSelected(it)) },
+                    )
+                },
+            ),
         )
     }
 

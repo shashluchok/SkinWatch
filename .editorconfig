@@ -9,5 +9,6 @@ ktlint_standard_multiline-expression-wrapping = disabled
 # Allows a single-expression function body (e.g. `fun foo(...) = when (...) { ... }`) to stay
 # on the same line as the signature instead of forcing `=` + body onto the next line.
 ktlint_standard_function-signature = disabled
-# Theme-level CompositionLocals: an accepted exception to the "avoid new CompositionLocals" rule.
-compose_allowed_composition_locals = LocalDimens, LocalSemanticColors, LocalMotion
+# Theme-level CompositionLocals, plus LocalBottomSheetHost (a genuine ambient service reachable
+# from arbitrary tree depth): accepted exceptions to the "avoid new CompositionLocals" rule.
+compose_allowed_composition_locals = LocalDimens, LocalSemanticColors, LocalMotion, LocalBottomSheetHost
