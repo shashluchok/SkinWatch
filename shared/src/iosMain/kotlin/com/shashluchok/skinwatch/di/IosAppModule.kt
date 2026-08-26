@@ -8,13 +8,22 @@ import com.shashluchok.skinwatch.domain.catalog.CatalogSyncScheduler
 import com.shashluchok.skinwatch.domain.pricesync.PriceSyncScheduler
 import org.koin.dsl.module
 
-object DesktopModule : AppModule() {
+object IosAppModule : AppModule() {
     private val platformModule = module {
         single<AppDatabase> { createRoomDatabase() }
         single<PriceSyncScheduler> { PriceSyncScheduler.EMPTY }
         single<CatalogSyncScheduler> { CatalogSyncScheduler.EMPTY }
     }
 
-    fun init(appConfigurationProvider: AppConfigurationProvider) =
-        start(platformModule = platformModule, appConfigurationProvider = appConfigurationProvider)
+    private var isKoinStarted = false
+
+    fun init(appConfigurationProvider: AppConfigurationProvider) {
+        if (!isKoinStarted) {
+            isKoinStarted = true
+            start(
+                platformModule = platformModule,
+                appConfigurationProvider = appConfigurationProvider,
+            )
+        }
+    }
 }

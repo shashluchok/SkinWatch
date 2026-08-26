@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.presentation.theme.AppFontFamilies
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
@@ -39,16 +38,17 @@ import io.github.alexzhirkevich.compottie.animateLottieCompositionAsState
 import io.github.alexzhirkevich.compottie.rememberLottieComposition
 import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.viewmodel.koinViewModel
 
 private const val REEL_ASSET_ASPECT_RATIO = 260f / 120f
 private const val REEL_ASSET_PATH_DARK = "files/splash_reel.json"
 private const val REEL_ASSET_PATH_LIGHT = "files/splash_reel_light.json"
 private const val REEL_NARRATIVE_END_FRAME = 175f
 private const val REEL_COMPOSITION_END_FRAME = 600f
-private const val REEL_NARRATIVE_END_PROGRESS = REEL_NARRATIVE_END_FRAME / REEL_COMPOSITION_END_FRAME
+private const val REEL_NARRATIVE_END_PROGRESS =
+    REEL_NARRATIVE_END_FRAME / REEL_COMPOSITION_END_FRAME
 
 private const val WORDMARK_REVEAL_DURATION_MS = 550
 private const val TAGLINE_REVEAL_DURATION_MS = 650
@@ -57,20 +57,7 @@ private const val TAGLINE_REVEAL_DURATION_MS = 650
 internal fun SplashScreen(
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SplashViewModel = koinViewModel(),
 ) {
-    val state = viewModel.stateFlow.collectAsStateWithLifecycle().value
-    val currentOnFinish by rememberUpdatedState(onFinish)
-
-    LaunchedEffect(state.isReady) {
-        if (state.isReady) currentOnFinish()
-    }
-
-    SplashScreen(modifier = modifier)
-}
-
-@Composable
-private fun SplashScreen(modifier: Modifier = Modifier) {
     val dimens = LocalDimens.current
     val density = LocalDensity.current
 
@@ -79,25 +66,30 @@ private fun SplashScreen(modifier: Modifier = Modifier) {
     val taglineAlpha = remember { Animatable(0f) }
 
     var isReelFinished by remember { mutableStateOf(false) }
+    val currentOnFinish by rememberUpdatedState(onFinish)
 
     LaunchedEffect(isReelFinished) {
         if (!isReelFinished) return@LaunchedEffect
-        launch {
-            wordmarkAlpha.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(
-                    durationMillis = WORDMARK_REVEAL_DURATION_MS,
-                ),
-            )
-        }
-        launch {
-            taglineAlpha.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(
-                    durationMillis = TAGLINE_REVEAL_DURATION_MS,
-                ),
-            )
-        }
+        joinAll(
+            launch {
+                wordmarkAlpha.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = WORDMARK_REVEAL_DURATION_MS,
+                    ),
+                )
+            },
+            launch {
+                taglineAlpha.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = TAGLINE_REVEAL_DURATION_MS,
+                    ),
+                )
+            },
+        )
+
+        currentOnFinish()
     }
 
     Box(

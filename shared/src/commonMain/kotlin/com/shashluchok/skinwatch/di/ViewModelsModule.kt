@@ -4,7 +4,7 @@ import com.shashluchok.skinwatch.presentation.navigation.AppViewModel
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewModel
 import com.shashluchok.skinwatch.presentation.screen.main.MainViewModel
 import com.shashluchok.skinwatch.presentation.screen.settings.SettingsViewModel
-import com.shashluchok.skinwatch.presentation.screen.splash.SplashViewModel
+import com.shashluchok.skinwatch.presentation.screen.settings.component.DebugPanelViewModel
 import com.shashluchok.skinwatch.presentation.screen.watchlist.WatchlistViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -17,11 +17,11 @@ internal val viewModelModule = module {
             syncPriceSnapshotsIfStale = get(),
             catalogSyncScheduler = get(),
             syncCatalogItemsIfStale = get(),
+            observeDebugSettings = get(),
         )
     }
 
     // Screens
-    viewModel { SplashViewModel() }
     viewModel {
         MainViewModel(
             searchCatalogItems = get(),
@@ -46,6 +46,15 @@ internal val viewModelModule = module {
             getDefaultCurrency = get(),
             hasConvertiblePrices = get(),
             convertStoredPrices = get(),
+            appConfigurationProvider = get(),
+        )
+    }
+
+    // Debug (temporary -- see the `debug` package doc comment on DebugSettingsRepository)
+    viewModel {
+        DebugPanelViewModel(
+            observeDebugSettings = get(),
+            updateDebugSettings = get(),
         )
     }
 }

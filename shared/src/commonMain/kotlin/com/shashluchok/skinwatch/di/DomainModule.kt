@@ -3,6 +3,8 @@ package com.shashluchok.skinwatch.di
 import com.shashluchok.skinwatch.domain.catalog.SearchCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.catalog.SyncCatalogItemsIfStaleInteractor
 import com.shashluchok.skinwatch.domain.catalog.SyncCatalogItemsInteractor
+import com.shashluchok.skinwatch.domain.debug.ObserveDebugSettingsInteractor
+import com.shashluchok.skinwatch.domain.debug.UpdateDebugSettingsInteractor
 import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
 import com.shashluchok.skinwatch.domain.exchangerate.HasConvertiblePricesInteractor
 import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
@@ -71,4 +73,8 @@ internal val domainModule = module {
     }
     single { SyncCatalogItemsIfStaleInteractor(catalogSyncStatusRepository = get(), syncCatalogItems = get()) }
     single { SearchCatalogItemsInteractor(catalogRepository = get()) }
+
+    // Debug (temporary -- see the `debug` package doc comment on DebugSettingsRepository)
+    single { ObserveDebugSettingsInteractor(debugSettingsRepository = get()) }
+    single { UpdateDebugSettingsInteractor(debugSettingsRepository = get()) }
 }

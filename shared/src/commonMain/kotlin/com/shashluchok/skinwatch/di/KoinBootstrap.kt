@@ -10,6 +10,6 @@ internal val appModules =
         viewModelModule,
     )
 
-internal fun initKoin(platformModule: Module) {
-    startKoin { modules(appModules + platformModule) }
+internal fun initKoin(platformModule: Module, appModule: Module) {
+    startKoin { modules(appModules + platformModule + appModule) }
 }

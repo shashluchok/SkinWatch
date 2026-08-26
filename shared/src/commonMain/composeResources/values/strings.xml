@@ -57,6 +57,10 @@
     <string name="dev__dialog_currency_change__confirm_button">Сменить</string>
     <string name="dev__dialog_currency_change__cancel_button">Отмена</string>
     <string name="dev__dialog_currency_change__error_message">Не удалось получить курс. Попробуйте ещё раз.</string>
+    <string name="dev__screen_settings__debug_row__title">Отладка</string>
+    <string name="dev__screen_debug_panel__title">Отладка</string>
+    <string name="dev__screen_debug_panel__show_splash_row__title">Показывать заставку при запуске</string>
+    <string name="dev__screen_debug_panel__mock_data_row__title">Тестовые данные в инвентаре</string>
     <string name="navbar__inventory_tab">Инвентарь</string>
     <string name="navbar__watchlist_tab">Список</string>
     <string name="navbar__settings_tab">Настройки</string>

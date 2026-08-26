@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "f93ebcbe5456b48a804307d06318f475",
+    "identityHash": "26bbdd0582e58885c785405788346ed5",
     "entities": [
       {
         "tableName": "InventoryItem",
@@ -268,11 +268,41 @@
             "id"
           ]
         }
+      },
+      {
+        "tableName": "DebugSettings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `showSplashScreen` INTEGER NOT NULL, `mockDataEnabled` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "showSplashScreen",
+            "columnName": "showSplashScreen",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mockDataEnabled",
+            "columnName": "mockDataEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f93ebcbe5456b48a804307d06318f475')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '26bbdd0582e58885c785405788346ed5')"
     ]
   }
 }

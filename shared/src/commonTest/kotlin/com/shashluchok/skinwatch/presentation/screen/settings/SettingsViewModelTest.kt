@@ -1,5 +1,6 @@
 package com.shashluchok.skinwatch.presentation.screen.settings
 
+import com.shashluchok.skinwatch.domain.AppConfigurationProvider
 import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateError
 import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateResult
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
@@ -218,4 +219,43 @@ class SettingsViewModelTest {
         assertTrue(fixture.currencyConversionRepository.convertAllCalls.isEmpty())
         assertEquals(null, fixture.settingsRepository.selectedCurrency.first())
     }
+
+    @Test
+    fun `OnDebugRowClick opens the debug panel`() = runTest(dispatcher) {
+        val viewModel = SettingsViewModelFixture().newViewModel()
+
+        viewModel.onAction(SettingsViewModel.Action.OnDebugRowClick)
+
+        assertTrue(viewModel.stateFlow.value.isDebugPanelVisible)
+    }
+
+    @Test
+    fun `OnDismissDebugPanel closes the debug panel`() = runTest(dispatcher) {
+        val viewModel = SettingsViewModelFixture().newViewModel()
+        viewModel.onAction(SettingsViewModel.Action.OnDebugRowClick)
+
+        viewModel.onAction(SettingsViewModel.Action.OnDismissDebugPanel)
+
+        assertFalse(viewModel.stateFlow.value.isDebugPanelVisible)
+    }
+
+    @Test
+    fun `initial state exposes isDebugPanelAvailable as true when the debug panel is available`() =
+        runTest(dispatcher) {
+            val available = object : AppConfigurationProvider {
+                override val configuration = AppConfigurationProvider.AppConfiguration(isDebug = true)
+            }
+            val viewModel = SettingsViewModelFixture(appConfigurationProvider = available).newViewModel()
+
+            assertTrue(viewModel.stateFlow.value.isDebugPanelAvailable)
+        }
+
+    @Test
+    fun `initial state exposes isDebugPanelAvailable as false when the debug panel is unavailable`() =
+        runTest(dispatcher) {
+            val viewModel =
+                SettingsViewModelFixture(appConfigurationProvider = AppConfigurationProvider.EMPTY).newViewModel()
+
+            assertFalse(viewModel.stateFlow.value.isDebugPanelAvailable)
+        }
 }

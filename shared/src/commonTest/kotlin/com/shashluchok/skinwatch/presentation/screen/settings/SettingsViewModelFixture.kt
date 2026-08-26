@@ -1,5 +1,6 @@
 package com.shashluchok.skinwatch.presentation.screen.settings
 
+import com.shashluchok.skinwatch.domain.AppConfigurationProvider
 import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
 import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateResult
 import com.shashluchok.skinwatch.domain.exchangerate.FakeCurrencyConversionRepository
@@ -23,6 +24,7 @@ internal class SettingsViewModelFixture(
     defaultCurrency: SteamCurrency = SteamCurrency.USD,
     hasConvertibleData: Boolean = false,
     ratesResult: ExchangeRateResult<Map<SteamCurrency, Double>> = ExchangeRateResult.Success(emptyMap()),
+    private val appConfigurationProvider: AppConfigurationProvider = AppConfigurationProvider.EMPTY,
 ) {
     val settingsRepository = FakeSettingsRepository(initialCurrency = initialSelectedCurrency)
     val steamMarketRepository = FakeSteamMarketRepository(defaultCurrency = defaultCurrency)
@@ -40,5 +42,6 @@ internal class SettingsViewModelFixture(
             exchangeRateRepository = exchangeRateRepository,
             currencyConversionRepository = currencyConversionRepository,
         ),
+        appConfigurationProvider = appConfigurationProvider,
     )
 }

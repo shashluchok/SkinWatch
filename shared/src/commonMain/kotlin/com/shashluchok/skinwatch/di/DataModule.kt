@@ -16,6 +16,11 @@ import com.shashluchok.skinwatch.data.storage.AppDatabase
 import com.shashluchok.skinwatch.data.storage.CurrencyConversionRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.catalog.CatalogSyncStatusRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.catalog.ItemCatalogRepositoryImpl
+import com.shashluchok.skinwatch.data.storage.debug.DebugInventoryRepository
+import com.shashluchok.skinwatch.data.storage.debug.DebugPriceSnapshotRepository
+import com.shashluchok.skinwatch.data.storage.debug.DebugSettingsRepositoryImpl
+import com.shashluchok.skinwatch.data.storage.debug.InventoryRepositoryMediator
+import com.shashluchok.skinwatch.data.storage.debug.PriceSnapshotRepositoryMediator
 import com.shashluchok.skinwatch.data.storage.inventory.InventoryRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.pricesync.PriceSyncStatusRepositoryImpl
@@ -24,6 +29,7 @@ import com.shashluchok.skinwatch.data.storage.watchlist.WatchlistRepositoryImpl
 import com.shashluchok.skinwatch.domain.catalog.CatalogSyncStatusRepository
 import com.shashluchok.skinwatch.domain.catalog.ItemCatalogRemoteSource
 import com.shashluchok.skinwatch.domain.catalog.ItemCatalogRepository
+import com.shashluchok.skinwatch.domain.debug.DebugSettingsRepository
 import com.shashluchok.skinwatch.domain.exchangerate.CurrencyConversionRepository
 import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateRepository
 import com.shashluchok.skinwatch.domain.inventory.InventoryRepository
@@ -68,9 +74,21 @@ internal val dataModule = module {
     single { get<AppDatabase>().priceSnapshotDao() }
     single { get<AppDatabase>().settingsDao() }
     single { get<AppDatabase>().priceSyncStatusDao() }
-    single<InventoryRepository> { InventoryRepositoryImpl(dao = get()) }
+    single<InventoryRepository> {
+        InventoryRepositoryMediator(
+            realRepository = InventoryRepositoryImpl(dao = get()),
+            debugRepository = DebugInventoryRepository(),
+            debugSettingsRepository = get(),
+        )
+    }
     single<WatchlistRepository> { WatchlistRepositoryImpl(dao = get()) }
-    single<PriceSnapshotRepository> { PriceSnapshotRepositoryImpl(dao = get()) }
+    single<PriceSnapshotRepository> {
+        PriceSnapshotRepositoryMediator(
+            realRepository = PriceSnapshotRepositoryImpl(dao = get()),
+            debugRepository = DebugPriceSnapshotRepository(),
+            debugSettingsRepository = get(),
+        )
+    }
     single<SettingsRepository> { SettingsRepositoryImpl(dao = get()) }
     single<PriceSyncStatusRepository> { PriceSyncStatusRepositoryImpl(dao = get()) }
     single<CurrencyConversionRepository> {
@@ -89,4 +107,8 @@ internal val dataModule = module {
     single { get<AppDatabase>().catalogSyncStatusDao() }
     single<ItemCatalogRepository> { ItemCatalogRepositoryImpl(dao = get()) }
     single<CatalogSyncStatusRepository> { CatalogSyncStatusRepositoryImpl(dao = get()) }
+
+    // Debug
+    single { get<AppDatabase>().debugSettingsDao() }
+    single<DebugSettingsRepository> { DebugSettingsRepositoryImpl(dao = get()) }
 }

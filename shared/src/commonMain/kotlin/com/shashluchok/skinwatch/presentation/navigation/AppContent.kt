@@ -4,11 +4,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.setSingletonImageLoaderFactory
@@ -31,25 +28,36 @@ fun AppContent(modifier: Modifier = Modifier) {
             .crossfade(true)
             .build()
     }
-    // Not otherwise referenced -- its `init` owns the app-startup price sync trigger.
-    koinViewModel<AppViewModel>()
 
+    val viewModel = koinViewModel<AppViewModel>()
+    val state = viewModel.stateFlow.collectAsStateWithLifecycle().value
+
+    AppContent(
+        state = state,
+        onAction = viewModel::onAction,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun AppContent(
+    state: AppViewModel.State,
+    onAction: (AppViewModel.Action) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     AppTheme {
         val motion = LocalMotion.current
-        // Splash is intentionally not a NavKey/backstack entry: it must never be reachable
-        // via back navigation once the app has moved on to MainScreen.
-        var isSplashDone by rememberSaveable { mutableStateOf(false) }
 
         Crossfade(
-            targetState = isSplashDone,
+            targetState = state.isSplashVisible,
             animationSpec = tween(
                 durationMillis = motion.duration.deliberate,
                 easing = motion.easing.emphasizedDecelerate,
             ),
-        ) { done ->
-            if (!done) {
+        ) { splashVisible ->
+            if (splashVisible) {
                 SplashScreen(
-                    onFinish = { isSplashDone = true },
+                    onFinish = { onAction(AppViewModel.Action.SplashScreenAnimationFinished) },
                     modifier = modifier.fillMaxSize(),
                 )
             } else {

@@ -1,6 +1,7 @@
 package com.shashluchok.skinwatch.presentation.screen.settings
 
 import androidx.lifecycle.viewModelScope
+import com.shashluchok.skinwatch.domain.AppConfigurationProvider
 import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesInteractor
 import com.shashluchok.skinwatch.domain.exchangerate.ConvertStoredPricesResult
 import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateError
@@ -21,6 +22,7 @@ internal class SettingsViewModel(
     private val getDefaultCurrency: GetDefaultCurrencyInteractor,
     private val hasConvertiblePrices: HasConvertiblePricesInteractor,
     private val convertStoredPrices: ConvertStoredPricesInteractor,
+    private val appConfigurationProvider: AppConfigurationProvider,
 ) : BaseViewModel<SettingsViewModel.State, SettingsViewModel.Action>() {
     data class State(
         val selectedCurrency: SteamCurrency? = null,
@@ -29,6 +31,8 @@ internal class SettingsViewModel(
         val isCurrencyChangeDialogVisible: Boolean = false,
         val pendingCurrency: SteamCurrency? = null,
         val conversionStatus: ConversionStatus = ConversionStatus.Idle,
+        val isDebugPanelVisible: Boolean = false,
+        val isDebugPanelAvailable: Boolean = false,
     )
 
     sealed interface ConversionStatus {
@@ -53,10 +57,19 @@ internal class SettingsViewModel(
         data object OnCurrencyChangeConfirmed : Action
 
         data object OnCurrencyChangeCancelled : Action
+
+        data object OnDebugRowClick : Action
+
+        data object OnDismissDebugPanel : Action
     }
 
     override val mutableStateFlow: MutableStateFlow<State> =
-        MutableStateFlow(State(resolvedAutoCurrency = getDefaultCurrency()))
+        MutableStateFlow(
+            State(
+                resolvedAutoCurrency = getDefaultCurrency(),
+                isDebugPanelAvailable = appConfigurationProvider.configuration.isDebug,
+            ),
+        )
 
     init {
         observeSelectedCurrency()
@@ -71,6 +84,8 @@ internal class SettingsViewModel(
             Action.OnDismissCurrencyPicker -> state = state.copy(isCurrencyPickerVisible = false)
             Action.OnCurrencyChangeConfirmed -> onCurrencyChangeConfirmed()
             Action.OnCurrencyChangeCancelled -> onCurrencyChangeCancelled()
+            Action.OnDebugRowClick -> state = state.copy(isDebugPanelVisible = true)
+            Action.OnDismissDebugPanel -> state = state.copy(isDebugPanelVisible = false)
         }
     }
 

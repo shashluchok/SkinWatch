@@ -1,11 +1,15 @@
 package com.shashluchok.skinwatch
 
 import android.app.Application
-import com.shashluchok.skinwatch.di.AndroidModule
+import com.shashluchok.skinwatch.di.AndroidAppModule
+import com.shashluchok.skinwatch.di.domain.AppConfigurationProviderImpl
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        AndroidModule.init(this@App)
+        AndroidAppModule.init(
+            context = this@App,
+            appConfigurationProvider = AppConfigurationProviderImpl(),
+        )
     }
 }

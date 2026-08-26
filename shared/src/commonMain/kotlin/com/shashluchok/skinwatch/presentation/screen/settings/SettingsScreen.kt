@@ -15,10 +15,12 @@ import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetR
 import com.shashluchok.skinwatch.presentation.component.bottomsheet.LocalBottomSheetHost
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyChangeConfirmationDialog
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheetContent
+import com.shashluchok.skinwatch.presentation.screen.settings.component.DebugPanel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_auto_option
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_row__title
+import com.shashluchok.skinwatch.resources.dev__screen_settings__debug_row__title
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -62,6 +64,17 @@ private fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            if (state.isDebugPanelAvailable) {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onAction(SettingsViewModel.Action.OnDebugRowClick) }
+                        .padding(dimens.padding.medium)
+                        .testTag(SettingsScreen.Tag.DEBUG_ROW),
+                    text = stringResource(Res.string.dev__screen_settings__debug_row__title),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
         }
     }
 
@@ -87,6 +100,15 @@ private fun SettingsScreen(
             onCancel = { onAction(SettingsViewModel.Action.OnCurrencyChangeCancelled) },
         )
     }
+
+    if (state.isDebugPanelVisible) {
+        LocalBottomSheetHost.current.Show(
+            BottomSheetRequest(
+                onDismissRequest = { onAction(SettingsViewModel.Action.OnDismissDebugPanel) },
+                content = { DebugPanel() },
+            ),
+        )
+    }
 }
 
 @Composable
@@ -106,5 +128,6 @@ internal object SettingsScreen {
     object Tag {
         const val ROOT = "SettingsScreen"
         const val CURRENCY_ROW = "$ROOT.currencyRow"
+        const val DEBUG_ROW = "$ROOT.debugRow"
     }
 }
