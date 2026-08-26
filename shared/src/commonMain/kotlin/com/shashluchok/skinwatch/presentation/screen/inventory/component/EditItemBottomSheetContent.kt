@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import com.shashluchok.skinwatch.presentation.component.BottomSheetTitleBar
 import com.shashluchok.skinwatch.presentation.component.ItemDetailsForm
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewModel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
@@ -33,40 +34,35 @@ internal fun EditItemBottomSheetContent(
 ) {
     val dimens = LocalDimens.current
 
-    Column(
-        modifier = modifier
-            .testTag(EditItemBottomSheetContent.Tag.ROOT)
-            .padding(dimens.padding.medium),
-    ) {
-        Text(
-            text = stringResource(Res.string.dev__screen_inventory__edit_sheet__title),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Text(text = sheet.item.marketHashName, style = MaterialTheme.typography.bodyLarge)
-        ItemDetailsForm(
-            quantity = sheet.quantity,
-            purchasePrice = sheet.purchasePrice,
-            validationError = sheet.validationError,
-            onQuantityChange = onQuantityChange,
-            onPurchasePriceChange = onPurchasePriceChange,
-        )
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimens.padding.small)
-                .testTag(EditItemBottomSheetContent.Tag.SAVE_BUTTON),
-            onClick = onSaveClick,
-        ) {
-            Text(text = stringResource(Res.string.dev__screen_inventory__item_form__save_button))
-        }
-        OutlinedButton(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimens.padding.small)
-                .testTag(EditItemBottomSheetContent.Tag.DELETE_BUTTON),
-            onClick = onDeleteClick,
-        ) {
-            Text(text = stringResource(Res.string.dev__screen_inventory__edit_sheet__delete_button))
+    Column(modifier = modifier.testTag(EditItemBottomSheetContent.Tag.ROOT)) {
+        BottomSheetTitleBar(title = stringResource(Res.string.dev__screen_inventory__edit_sheet__title))
+        Column(modifier = Modifier.padding(dimens.padding.medium)) {
+            Text(text = sheet.item.marketHashName, style = MaterialTheme.typography.bodyLarge)
+            ItemDetailsForm(
+                quantity = sheet.quantity,
+                purchasePrice = sheet.purchasePrice,
+                validationError = sheet.validationError,
+                onQuantityChange = onQuantityChange,
+                onPurchasePriceChange = onPurchasePriceChange,
+            )
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = dimens.padding.small)
+                    .testTag(EditItemBottomSheetContent.Tag.SAVE_BUTTON),
+                onClick = onSaveClick,
+            ) {
+                Text(text = stringResource(Res.string.dev__screen_inventory__item_form__save_button))
+            }
+            OutlinedButton(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = dimens.padding.small)
+                    .testTag(EditItemBottomSheetContent.Tag.DELETE_BUTTON),
+                onClick = onDeleteClick,
+            ) {
+                Text(text = stringResource(Res.string.dev__screen_inventory__edit_sheet__delete_button))
+            }
         }
     }
 

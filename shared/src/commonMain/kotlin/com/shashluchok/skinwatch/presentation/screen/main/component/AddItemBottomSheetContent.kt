@@ -14,10 +14,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.shashluchok.skinwatch.domain.catalog.CatalogItem
+import com.shashluchok.skinwatch.presentation.component.BottomSheetTitleBar
 import com.shashluchok.skinwatch.presentation.component.ItemDetailsForm
 import com.shashluchok.skinwatch.presentation.screen.main.MainViewModel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
@@ -31,6 +33,7 @@ import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__sav
 import org.jetbrains.compose.resources.stringResource
 
 private const val ADD_ITEM_BOTTOM_SHEET_STEP_LABEL = "AddItemBottomSheetStep"
+private val ADD_SEARCH_STEP_HORIZONTAL_PADDING = 5.dp
 
 /** Content of the add-item bottom sheet. */
 @Composable
@@ -76,49 +79,50 @@ private fun AddSearchStep(
 ) {
     val dimens = LocalDimens.current
 
-    Column(modifier = Modifier.padding(dimens.padding.medium)) {
-        Text(
-            text = stringResource(Res.string.dev__screen_inventory__add_search__title),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimens.padding.small)
-                .testTag(AddItemBottomSheetContent.Tag.SEARCH_QUERY_FIELD),
-            value = sheet.query,
-            onValueChange = onQueryChange,
-            label = { Text(text = stringResource(Res.string.dev__screen_inventory__add_search__query_placeholder)) },
-            keyboardOptions = KeyboardOptions.Default,
-        )
-        when (val status = sheet.status) {
-            MainViewModel.SearchStatus.Idle -> Unit
+    Column {
+        BottomSheetTitleBar(title = stringResource(Res.string.dev__screen_inventory__add_search__title))
+        Column(modifier = Modifier.padding(horizontal = ADD_SEARCH_STEP_HORIZONTAL_PADDING)) {
+            OutlinedTextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = dimens.padding.small)
+                    .testTag(AddItemBottomSheetContent.Tag.SEARCH_QUERY_FIELD),
+                value = sheet.query,
+                onValueChange = onQueryChange,
+                label = {
+                    Text(text = stringResource(Res.string.dev__screen_inventory__add_search__query_placeholder))
+                },
+                keyboardOptions = KeyboardOptions.Default,
+            )
+            when (val status = sheet.status) {
+                MainViewModel.SearchStatus.Idle -> Unit
 
-            is MainViewModel.SearchStatus.Loaded -> if (status.results.isEmpty()) {
-                Text(
-                    modifier = Modifier.padding(top = dimens.padding.medium),
-                    text = stringResource(Res.string.dev__screen_inventory__add_search__empty_results),
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(top = dimens.padding.small)
-                        .testTag(AddItemBottomSheetContent.Tag.SEARCH_RESULTS_LIST),
-                ) {
-                    items(items = status.results, key = { it.marketHashName }) { result ->
-                        SearchResultRow(
-                            result = result,
-                            onClick = { onResultSelect(result) },
-                        )
+                is MainViewModel.SearchStatus.Loaded -> if (status.results.isEmpty()) {
+                    Text(
+                        modifier = Modifier.padding(top = dimens.padding.medium),
+                        text = stringResource(Res.string.dev__screen_inventory__add_search__empty_results),
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(top = dimens.padding.small)
+                            .testTag(AddItemBottomSheetContent.Tag.SEARCH_RESULTS_LIST),
+                    ) {
+                        items(items = status.results, key = { it.marketHashName }) { result ->
+                            SearchResultRow(
+                                result = result,
+                                onClick = { onResultSelect(result) },
+                            )
+                        }
                     }
                 }
-            }
 
-            MainViewModel.SearchStatus.CatalogUnavailable -> Text(
-                modifier = Modifier.padding(top = dimens.padding.medium),
-                text = stringResource(Res.string.dev__screen_inventory__add_search__catalog_empty),
-                color = MaterialTheme.colorScheme.error,
-            )
+                MainViewModel.SearchStatus.CatalogUnavailable -> Text(
+                    modifier = Modifier.padding(top = dimens.padding.medium),
+                    text = stringResource(Res.string.dev__screen_inventory__add_search__catalog_empty),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 }
@@ -139,27 +143,26 @@ private fun AddDetailsStep(
         onBackCompleted = onBackClick,
     )
 
-    Column(modifier = Modifier.padding(dimens.padding.medium)) {
-        Text(
-            text = stringResource(Res.string.dev__screen_inventory__add_details__title),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Text(text = sheet.selected.displayName, style = MaterialTheme.typography.bodyLarge)
-        ItemDetailsForm(
-            quantity = sheet.quantity,
-            purchasePrice = sheet.purchasePrice,
-            validationError = sheet.validationError,
-            onQuantityChange = onQuantityChange,
-            onPurchasePriceChange = onPurchasePriceChange,
-        )
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimens.padding.small)
-                .testTag(AddItemBottomSheetContent.Tag.SAVE_BUTTON),
-            onClick = onSaveClick,
-        ) {
-            Text(text = stringResource(Res.string.dev__screen_inventory__item_form__save_button))
+    Column {
+        BottomSheetTitleBar(title = stringResource(Res.string.dev__screen_inventory__add_details__title))
+        Column(modifier = Modifier.padding(dimens.padding.medium)) {
+            Text(text = sheet.selected.displayName, style = MaterialTheme.typography.bodyLarge)
+            ItemDetailsForm(
+                quantity = sheet.quantity,
+                purchasePrice = sheet.purchasePrice,
+                validationError = sheet.validationError,
+                onQuantityChange = onQuantityChange,
+                onPurchasePriceChange = onPurchasePriceChange,
+            )
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = dimens.padding.small)
+                    .testTag(AddItemBottomSheetContent.Tag.SAVE_BUTTON),
+                onClick = onSaveClick,
+            ) {
+                Text(text = stringResource(Res.string.dev__screen_inventory__item_form__save_button))
+            }
         }
     }
 }

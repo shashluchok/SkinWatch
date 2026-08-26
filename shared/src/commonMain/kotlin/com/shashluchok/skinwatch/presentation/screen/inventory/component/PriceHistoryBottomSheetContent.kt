@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
+import com.shashluchok.skinwatch.presentation.component.BottomSheetTitleBar
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewModel
 import com.shashluchok.skinwatch.presentation.theme.AppFontFamilies
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
@@ -62,39 +63,35 @@ internal fun PriceHistoryBottomSheetContent(
     // count as a "data point" for the 0/1/2+ branch below (see design addendum section 7).
     val pricedSnapshots = sheet.snapshots.filter { it.lowestPrice != null }
 
-    Column(
-        modifier = modifier
-            .testTag(PriceHistoryBottomSheetContent.Tag.ROOT)
-            .padding(
+    Column(modifier = modifier.testTag(PriceHistoryBottomSheetContent.Tag.ROOT)) {
+        BottomSheetTitleBar(title = stringResource(Res.string.dev__screen_inventory__price_history_sheet__title))
+        Column(
+            modifier = Modifier.padding(
                 horizontal = dimens.padding.medium,
                 vertical = dimens.padding.medium,
             ),
-    ) {
-        Text(
-            text = stringResource(Res.string.dev__screen_inventory__price_history_sheet__title),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Text(
-            modifier = Modifier.padding(top = dimens.padding.tiny),
-            text = sheet.item.marketHashName,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = dimens.padding.medium),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
+        ) {
+            Text(
+                text = sheet.item.marketHashName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = dimens.padding.medium),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
 
-        when {
-            pricedSnapshots.isEmpty() -> EmptyPriceHistory()
-            pricedSnapshots.size == 1 -> SinglePricePoint(
-                snapshot = pricedSnapshots.single(),
-                purchasePrice = sheet.item.purchasePrice,
-            )
-            else -> PriceHistoryChart(
-                snapshots = pricedSnapshots,
-                purchasePrice = sheet.item.purchasePrice,
-            )
+            when {
+                pricedSnapshots.isEmpty() -> EmptyPriceHistory()
+                pricedSnapshots.size == 1 -> SinglePricePoint(
+                    snapshot = pricedSnapshots.single(),
+                    purchasePrice = sheet.item.purchasePrice,
+                )
+                else -> PriceHistoryChart(
+                    snapshots = pricedSnapshots,
+                    purchasePrice = sheet.item.purchasePrice,
+                )
+            }
         }
     }
 }
