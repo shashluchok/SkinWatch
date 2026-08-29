@@ -13,7 +13,7 @@ class DebugPriceSnapshotRepositoryTest {
     fun `observeSnapshots returns a chronologically ordered history for a known scenario`() = runTest {
         val repository = DebugPriceSnapshotRepository()
 
-        val snapshots = repository.observeSnapshots("${DEBUG_NAME_PREFIX}Many prices, volatile, profit").first()
+        val snapshots = repository.observeSnapshots("${DEBUG_NAME_PREFIX}Много цен, волатильно, прибыль").first()
 
         assertTrue(snapshots.isNotEmpty())
         assertEquals(snapshots.sortedBy { it.capturedAt }, snapshots)
@@ -23,7 +23,7 @@ class DebugPriceSnapshotRepositoryTest {
     fun `observeSnapshots is empty for the no-snapshots-yet scenario`() = runTest {
         val repository = DebugPriceSnapshotRepository()
 
-        val snapshots = repository.observeSnapshots("${DEBUG_NAME_PREFIX}No snapshots yet").first()
+        val snapshots = repository.observeSnapshots("${DEBUG_NAME_PREFIX}Ещё нет снэпшотов").first()
 
         assertTrue(snapshots.isEmpty())
     }
@@ -40,7 +40,7 @@ class DebugPriceSnapshotRepositoryTest {
     @Test
     fun `record is a no-op that never changes the fixed history`() = runTest {
         val repository = DebugPriceSnapshotRepository()
-        val marketHashName = "${DEBUG_NAME_PREFIX}Breakeven"
+        val marketHashName = "${DEBUG_NAME_PREFIX}Точка безубыточности"
         val before = repository.observeSnapshots(marketHashName).first()
 
         repository.record(

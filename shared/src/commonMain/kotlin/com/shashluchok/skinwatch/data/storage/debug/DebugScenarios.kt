@@ -6,6 +6,7 @@ import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 internal const val DEBUG_ICON_URL = "https://community.akamai.steamstatic.com/economy/image/abc123"
@@ -27,12 +28,13 @@ internal fun debugScenarios(now: Instant): List<DebugScenario> =
         oscillatingScenarios(now) +
         shapedScenarios(now) +
         extremeScenarios(now) +
-        edgeCaseScenarios(now)
+        edgeCaseScenarios(now) +
+        timeGapScenarios(now)
 
 private fun volatileScenarios(now: Instant): List<DebugScenario> = listOf(
     // Long, volatile history, net up -- the "big swings, ends in profit" case.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Many prices, volatile, profit",
+        marketHashName = "${DEBUG_NAME_PREFIX}Много цен, волатильно, прибыль",
         purchasePriceMinorUnits = 30_00,
         snapshots = walk(
             now = now,
@@ -46,7 +48,7 @@ private fun volatileScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Long, volatile history, net down -- mirror of the above.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Many prices, volatile, loss",
+        marketHashName = "${DEBUG_NAME_PREFIX}Много цен, волатильно, убыток",
         purchasePriceMinorUnits = 60_00,
         snapshots = walk(
             now = now,
@@ -60,7 +62,7 @@ private fun volatileScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Short, volatile history, profit -- few points but still a real swing between them.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Few prices, volatile, profit",
+        marketHashName = "${DEBUG_NAME_PREFIX}Мало цен, волатильно, прибыль",
         purchasePriceMinorUnits = 15_00,
         snapshots = walk(
             now = now,
@@ -74,7 +76,7 @@ private fun volatileScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Short, volatile history, loss.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Few prices, volatile, loss",
+        marketHashName = "${DEBUG_NAME_PREFIX}Мало цен, волатильно, убыток",
         purchasePriceMinorUnits = 45_00,
         snapshots = walk(
             now = now,
@@ -91,7 +93,7 @@ private fun volatileScenarios(now: Instant): List<DebugScenario> = listOf(
 private fun flatScenarios(now: Instant): List<DebugScenario> = listOf(
     // Long, flat/quiet history, tiny net profit -- tests the color split with a subtle line.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Many prices, flat, slight profit",
+        marketHashName = "${DEBUG_NAME_PREFIX}Много цен, плоско, небольшая прибыль",
         purchasePriceMinorUnits = 100_00,
         snapshots = walk(
             now = now,
@@ -105,7 +107,7 @@ private fun flatScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Long, flat/quiet history, tiny net loss.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Many prices, flat, slight loss",
+        marketHashName = "${DEBUG_NAME_PREFIX}Много цен, плоско, небольшой убыток",
         purchasePriceMinorUnits = 100_00,
         snapshots = walk(
             now = now,
@@ -119,7 +121,7 @@ private fun flatScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Short, flat/quiet history -- barely moves, still needs to render sensibly at high zoom.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Few prices, flat",
+        marketHashName = "${DEBUG_NAME_PREFIX}Мало цен, плоско",
         purchasePriceMinorUnits = 20_00,
         snapshots = walk(
             now = now,
@@ -139,7 +141,7 @@ private fun flatScenarios(now: Instant): List<DebugScenario> = listOf(
 private fun oscillatingScenarios(now: Instant): List<DebugScenario> = listOf(
     // Purchase price sits at the oscillation's center -- crosses it on every cycle.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Many prices, oscillating around purchase price",
+        marketHashName = "${DEBUG_NAME_PREFIX}Много цен, колебания вокруг цены закупки",
         purchasePriceMinorUnits = 50_00,
         snapshots = oscillate(
             now = now,
@@ -154,7 +156,7 @@ private fun oscillatingScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Same idea, but many small fast wiggles instead of a few broad swings.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Many prices, choppy small oscillation",
+        marketHashName = "${DEBUG_NAME_PREFIX}Много цен, частые мелкие колебания",
         purchasePriceMinorUnits = 40_00,
         snapshots = oscillate(
             now = now,
@@ -169,7 +171,7 @@ private fun oscillatingScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // The opposite extreme -- a couple of huge, slow swings rather than many small ones.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Many prices, big slow swings",
+        marketHashName = "${DEBUG_NAME_PREFIX}Много цен, крупные медленные качели",
         purchasePriceMinorUnits = 80_00,
         snapshots = oscillate(
             now = now,
@@ -191,7 +193,7 @@ private fun oscillatingScenarios(now: Instant): List<DebugScenario> = listOf(
 private fun shapedScenarios(now: Instant): List<DebugScenario> = listOf(
     // Shoots far above purchase price, then crashes back down close to where it started.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Sharp spike then crash",
+        marketHashName = "${DEBUG_NAME_PREFIX}Резкий скачок, затем обвал",
         purchasePriceMinorUnits = 25_00,
         snapshots = piecewiseWalk(
             now = now,
@@ -204,7 +206,7 @@ private fun shapedScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Drops well below purchase price, then recovers back above it -- a V shape.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Crash then recovery",
+        marketHashName = "${DEBUG_NAME_PREFIX}Обвал, затем восстановление",
         purchasePriceMinorUnits = 60_00,
         snapshots = piecewiseWalk(
             now = now,
@@ -218,7 +220,7 @@ private fun shapedScenarios(now: Instant): List<DebugScenario> = listOf(
     // Sits flat for most of its history, then jumps to a new level near the end -- tests a sudden
     // regime change rather than a gradual trend.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Long flat then sudden jump",
+        marketHashName = "${DEBUG_NAME_PREFIX}Долго плоско, потом резкий скачок",
         purchasePriceMinorUnits = 35_00,
         snapshots = piecewiseWalk(
             now = now,
@@ -235,7 +237,7 @@ private fun shapedScenarios(now: Instant): List<DebugScenario> = listOf(
 private fun extremeScenarios(now: Instant): List<DebugScenario> = listOf(
     // Enough points to check rendering doesn't get cluttered/slow with a genuinely dense history.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Very dense history (150 points)",
+        marketHashName = "${DEBUG_NAME_PREFIX}Очень плотная история (150 точек)",
         purchasePriceMinorUnits = 45_00,
         snapshots = walk(
             now = now,
@@ -249,7 +251,7 @@ private fun extremeScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // Low end of the Y-axis -- prices measured in single rubles, close to the price floor.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Very cheap item",
+        marketHashName = "${DEBUG_NAME_PREFIX}Очень дешёвый предмет",
         purchasePriceMinorUnits = 1_50,
         snapshots = walk(
             now = now,
@@ -263,7 +265,7 @@ private fun extremeScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // High end of the Y-axis -- a expensive item with four-figure ruble prices.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Very expensive item",
+        marketHashName = "${DEBUG_NAME_PREFIX}Очень дорогой предмет",
         purchasePriceMinorUnits = 15_000_00,
         snapshots = walk(
             now = now,
@@ -275,12 +277,42 @@ private fun extremeScenarios(now: Instant): List<DebugScenario> = listOf(
             seed = 17,
         ),
     ),
+    // Bought near the all-time low, then a huge spike far above it -- the Y axis's centering step
+    // is driven by whichever side needs more room, so a lopsided case like this can push the
+    // bottom of the axis below zero (a real price can never be negative).
+    DebugScenario(
+        marketHashName = "${DEBUG_NAME_PREFIX}Купили у минимума, дальше гигантский скачок вверх",
+        purchasePriceMinorUnits = 10_00,
+        snapshots = walk(
+            now = now,
+            spanDays = 60,
+            count = 30,
+            startMinorUnits = 9_50,
+            driftMinorUnitsPerStep = 300,
+            noiseMinorUnits = 100,
+            seed = 20,
+        ),
+    ),
+    // Mirror of the above -- bought near the all-time high, then a crash close to zero.
+    DebugScenario(
+        marketHashName = "${DEBUG_NAME_PREFIX}Купили у максимума, дальше обвал почти до нуля",
+        purchasePriceMinorUnits = 95_00,
+        snapshots = walk(
+            now = now,
+            spanDays = 60,
+            count = 30,
+            startMinorUnits = 90_00,
+            driftMinorUnitsPerStep = -300,
+            noiseMinorUnits = 100,
+            seed = 21,
+        ),
+    ),
 )
 
 private fun edgeCaseScenarios(now: Instant): List<DebugScenario> = listOf(
     // Exactly at purchase price -- the "neutral" glyph-color branch (neither profit nor loss).
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Breakeven",
+        marketHashName = "${DEBUG_NAME_PREFIX}Точка безубыточности",
         purchasePriceMinorUnits = 50_00,
         snapshots = walk(
             now = now,
@@ -294,15 +326,44 @@ private fun edgeCaseScenarios(now: Instant): List<DebugScenario> = listOf(
     ),
     // A single reading -- exercises the chart's single-point layout, not the multi-point line.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}Single snapshot",
+        marketHashName = "${DEBUG_NAME_PREFIX}Один снэпшот",
         purchasePriceMinorUnits = 25_00,
         snapshots = listOf(now - SINGLE_SNAPSHOT_DAYS_AGO.days to SINGLE_SNAPSHOT_PRICE_MINOR_UNITS),
     ),
     // No readings at all -- exercises the chart's empty state.
     DebugScenario(
-        marketHashName = "${DEBUG_NAME_PREFIX}No snapshots yet",
+        marketHashName = "${DEBUG_NAME_PREFIX}Ещё нет снэпшотов",
         purchasePriceMinorUnits = 10_00,
         snapshots = emptyList(),
+    ),
+)
+
+// Real timestamps are never evenly spaced -- these push that to an extreme, so the X axis's
+// evenly-spaced-in-time labels (see evenlySpacedXValues) have to divide a span that's almost
+// entirely one huge gap plus one tiny one, instead of many similarly sized gaps.
+@Suppress("MagicNumber")
+private fun timeGapScenarios(now: Instant): List<DebugScenario> = listOf(
+    // Second reading half an hour after the first, third one a full two years later.
+    DebugScenario(
+        marketHashName = "${DEBUG_NAME_PREFIX}Два снэпшота почти сразу, третий -- спустя 2 года",
+        purchasePriceMinorUnits = 20_00,
+        snapshots = listOf(
+            (now - 730.days) to 20_00L,
+            (now - 730.days + 30.minutes) to 21_00L,
+            now to 45_00L,
+        ),
+    ),
+    // Same idea but with more points crammed into the first minute, then a long silent stretch.
+    DebugScenario(
+        marketHashName = "${DEBUG_NAME_PREFIX}Пачка снэпшотов за минуту, потом год тишины",
+        purchasePriceMinorUnits = 30_00,
+        snapshots = listOf(
+            (now - 365.days) to 30_00L,
+            (now - 365.days + 10.minutes) to 31_50L,
+            (now - 365.days + 25.minutes) to 29_00L,
+            (now - 365.days + 40.minutes) to 32_00L,
+            now to 55_00L,
+        ),
     ),
 )
 
