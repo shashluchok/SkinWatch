@@ -21,8 +21,8 @@ import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetR
 import com.shashluchok.skinwatch.presentation.component.bottomsheet.LocalBottomSheetHost
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
-import com.shashluchok.skinwatch.presentation.screen.inventory.component.PriceHistoryBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncStatusBar
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryBottomSheetContent
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state

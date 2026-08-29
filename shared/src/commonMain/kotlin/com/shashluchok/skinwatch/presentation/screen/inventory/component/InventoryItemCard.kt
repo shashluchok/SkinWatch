@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -25,8 +26,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import coil3.compose.AsyncImage
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
+import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
+import com.shashluchok.skinwatch.presentation.theme.LocalSemanticColors
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__market_price_label
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__no_price_data
@@ -112,20 +115,28 @@ internal fun InventoryItemCard(
                     }
                 }
             }
-            PriceHistoryGlyph(modifier = Modifier.size(dimens.iconSize.small))
+            PriceHistoryGlyph(
+                listItem = listItem,
+                modifier = Modifier.size(dimens.iconSize.small),
+            )
         }
     }
 }
 
-/**
- * Static "sparkline" hint glyph indicating the card opens the price history chart on tap --
- * unlike `NavTab.GlowIcon`'s animated glow (reserved for a single selected tab at a time), this
- * stays static since many cards are visible on screen simultaneously. Decorative: the tap action
- * is already announced on the card itself via [Role.Button]/`onClickLabel`.
- */
 @Composable
-private fun PriceHistoryGlyph(modifier: Modifier = Modifier) {
-    val strokeColor = MaterialTheme.colorScheme.onSurfaceVariant
+private fun PriceHistoryGlyph(
+    listItem: InventoryListItem,
+    modifier: Modifier = Modifier,
+) {
+    val semanticColors = LocalSemanticColors.current
+    val neutralColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val strokeColor = priceHistoryGlyphColor(
+        latestSnapshot = listItem.latestSnapshot,
+        purchasePrice = listItem.item.purchasePrice,
+        positive = semanticColors.positive,
+        negative = semanticColors.negative,
+        neutral = neutralColor,
+    )
     val strokeWidth = LocalDimens.current.border.thin
     Canvas(modifier = modifier.testTag(InventoryItemCard.Tag.PRICE_HISTORY_GLYPH)) {
         val path = Path().apply {
@@ -135,6 +146,21 @@ private fun PriceHistoryGlyph(modifier: Modifier = Modifier) {
             }
         }
         drawPath(path = path, color = strokeColor, style = Stroke(width = strokeWidth.toPx()))
+    }
+}
+
+internal fun priceHistoryGlyphColor(
+    latestSnapshot: PriceSnapshot?,
+    purchasePrice: Money,
+    positive: Color,
+    negative: Color,
+    neutral: Color,
+): Color {
+    val lowestPrice = latestSnapshot?.lowestPrice ?: return neutral
+    return when {
+        lowestPrice.minorUnits > purchasePrice.minorUnits -> positive
+        lowestPrice.minorUnits < purchasePrice.minorUnits -> negative
+        else -> neutral
     }
 }
 

@@ -1,4 +1,4 @@
-package com.shashluchok.skinwatch.presentation.screen.inventory.component
+package com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
@@ -25,16 +25,13 @@ import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewMode
 import com.shashluchok.skinwatch.presentation.theme.AppFontFamilies
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.tabularNumeric
+import com.shashluchok.skinwatch.presentation.util.toFullDateLabel
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__price_history_sheet__empty_state
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__price_history_sheet__purchase_price_label
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__price_history_sheet__single_point_hint
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__price_history_sheet__title
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.number
-import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
-import kotlin.time.Instant
 
 private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
 private const val EMPTY_STATE_GLYPH_ALPHA = 0.5f
@@ -219,14 +216,6 @@ private fun DashSwatch(modifier: Modifier = Modifier) {
         )
     }
 }
-
-/** "dd.MM.yyyy", same fixed-UTC rationale as `PriceHistoryChart.kt`'s `toAxisDateLabel`. */
-private fun Instant.toFullDateLabel(): String {
-    val date = toLocalDateTime(TimeZone.UTC).date
-    return "${date.day.pad2()}.${date.month.number.pad2()}.${date.year}"
-}
-
-internal fun Int.pad2(): String = toString().padStart(length = 2, padChar = '0')
 
 /**
  * Plain, locale-independent formatting (e.g. "49.00 USD"), same pattern as `InventoryItemCard`'s
