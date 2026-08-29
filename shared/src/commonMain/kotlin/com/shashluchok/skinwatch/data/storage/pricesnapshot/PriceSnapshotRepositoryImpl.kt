@@ -4,6 +4,7 @@ import com.shashluchok.skinwatch.data.storage.idToSteamCurrency
 import com.shashluchok.skinwatch.data.storage.steamCurrencyToId
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesnapshot.idsToDeleteForRetention
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
@@ -32,6 +33,15 @@ internal class PriceSnapshotRepositoryImpl(
 
     override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> =
         dao.observeForItem(marketHashName).map { entities -> entities.map { it.toDomain() } }
+
+    override suspend fun compactHistory(marketHashName: String, now: Instant) {
+        val entities = dao.getAllForItem(marketHashName)
+        val idsToDelete = idsToDeleteForRetention(
+            snapshots = entities.map { it.id to it.capturedAt },
+            now = now,
+        )
+        if (idsToDelete.isNotEmpty()) dao.deleteByIds(idsToDelete)
+    }
 }
 
 private fun PriceSnapshotEntity.toDomain(): PriceSnapshot {

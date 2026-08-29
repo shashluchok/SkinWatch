@@ -102,6 +102,31 @@ class SyncPriceSnapshotsInteractorTest {
     }
 
     @Test
+    fun `compacts history for every item, including ones whose fetch failed`() = runTest {
+        inventoryRepository.addItem(
+            marketHashName = "fails",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        inventoryRepository.addItem(
+            marketHashName = "succeeds",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        steamMarketRepository.priceOverviewResultsByHashName["fails"] =
+            SteamMarketResult.Failure(SteamMarketError.Network)
+        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        newInteractor().invoke()
+
+        assertEquals(setOf("fails", "succeeds"), priceSnapshotRepository.compactHistoryCalls.toSet())
+    }
+
+    @Test
     fun `an empty inventory is a no-op -- no fetch, no snapshot, no completed run`() = runTest {
         newInteractor().invoke()
 

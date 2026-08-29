@@ -53,6 +53,7 @@ internal class SyncPriceSnapshotsInteractor(
                         capturedAt = capturedAt,
                     )
                 }
+                priceSnapshotRepository.compactHistory(marketHashName = marketHashName, now = capturedAt)
                 // Failure: skip, keep going -- picked up on the next cycle.
             }
             priceSyncStatusRepository.markCompleted(capturedAt)

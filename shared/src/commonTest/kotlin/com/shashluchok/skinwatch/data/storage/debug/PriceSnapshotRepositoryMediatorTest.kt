@@ -87,4 +87,20 @@ class PriceSnapshotRepositoryMediatorTest {
         assertTrue(realRepository.recorded.size == 1)
         assertTrue(debugRepository.recorded.size == 1)
     }
+
+    @Test
+    fun `compactHistory delegates to whichever repository is currently active`() = runTest {
+        val realRepository = FakePriceSnapshotRepository()
+        val debugRepository = FakePriceSnapshotRepository()
+        val mediator = PriceSnapshotRepositoryMediator(
+            realRepository = realRepository,
+            debugRepository = debugRepository,
+            debugSettingsRepository = FakeDebugSettingsRepository(initialMockDataEnabled = true),
+        )
+
+        mediator.compactHistory(marketHashName = "AK-47 | Redline", now = Clock.System.now())
+
+        assertEquals(listOf("AK-47 | Redline"), debugRepository.compactHistoryCalls)
+        assertTrue(realRepository.compactHistoryCalls.isEmpty())
+    }
 }

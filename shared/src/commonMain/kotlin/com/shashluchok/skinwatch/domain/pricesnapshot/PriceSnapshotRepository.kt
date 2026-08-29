@@ -24,6 +24,13 @@ internal interface PriceSnapshotRepository {
 
     fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>>
 
+    /**
+     * Thins out history older than 7 days to 1 reading/day and older than 90 days to
+     * 1 reading/week, always keeping the last real reading of each collapsed period -- never a
+     * synthetic average.
+     */
+    suspend fun compactHistory(marketHashName: String, now: Instant)
+
     companion object {
         val EMPTY = object : PriceSnapshotRepository {
             override suspend fun record(
@@ -34,6 +41,8 @@ internal interface PriceSnapshotRepository {
             ) = Unit
 
             override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> = flowOf(emptyList())
+
+            override suspend fun compactHistory(marketHashName: String, now: Instant) = Unit
         }
     }
 }

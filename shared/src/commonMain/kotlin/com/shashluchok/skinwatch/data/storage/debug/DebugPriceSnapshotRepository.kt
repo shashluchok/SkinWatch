@@ -33,6 +33,8 @@ internal class DebugPriceSnapshotRepository : PriceSnapshotRepository {
     override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> =
         flowOf(snapshotsByMarketHashName[marketHashName].orEmpty())
 
+    override suspend fun compactHistory(marketHashName: String, now: Instant) = Unit
+
     private fun Long?.toSnapshot(
         marketHashName: String,
         capturedAt: Instant,

@@ -11,6 +11,7 @@ internal class FakePriceSnapshotRepository : PriceSnapshotRepository {
     private val snapshotFlows = mutableMapOf<String, MutableStateFlow<List<PriceSnapshot>>>()
     val observeCallCounts = mutableMapOf<String, Int>()
     val recorded = mutableListOf<PriceSnapshot>()
+    val compactHistoryCalls = mutableListOf<String>()
 
     fun emitSnapshot(
         marketHashName: String,
@@ -49,5 +50,9 @@ internal class FakePriceSnapshotRepository : PriceSnapshotRepository {
     override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> {
         observeCallCounts[marketHashName] = (observeCallCounts[marketHashName] ?: 0) + 1
         return snapshotFlows.getOrPut(marketHashName) { MutableStateFlow(emptyList()) }
+    }
+
+    override suspend fun compactHistory(marketHashName: String, now: Instant) {
+        compactHistoryCalls += marketHashName
     }
 }

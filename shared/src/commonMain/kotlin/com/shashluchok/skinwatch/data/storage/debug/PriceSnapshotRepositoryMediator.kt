@@ -39,6 +39,9 @@ internal class PriceSnapshotRepositoryMediator(
             activeRepository(it.mockDataEnabled).observeSnapshots(marketHashName)
         }
 
+    override suspend fun compactHistory(marketHashName: String, now: Instant) =
+        activeRepository().compactHistory(marketHashName = marketHashName, now = now)
+
     private suspend fun activeRepository(): PriceSnapshotRepository =
         activeRepository(debugSettingsRepository.settings.first().mockDataEnabled)
 

@@ -20,6 +20,12 @@ internal interface PriceSnapshotDao {
     @Query("SELECT * FROM PriceSnapshot")
     suspend fun getAll(): List<PriceSnapshotEntity>
 
+    @Query("SELECT * FROM PriceSnapshot WHERE marketHashName = :marketHashName ORDER BY capturedAt ASC")
+    suspend fun getAllForItem(marketHashName: String): List<PriceSnapshotEntity>
+
     @Update
     suspend fun updateAll(entities: List<PriceSnapshotEntity>)
+
+    @Query("DELETE FROM PriceSnapshot WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 }
