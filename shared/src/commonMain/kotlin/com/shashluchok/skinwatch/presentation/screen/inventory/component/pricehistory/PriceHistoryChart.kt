@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -62,7 +61,7 @@ import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalSemanticColors
 import com.shashluchok.skinwatch.presentation.theme.tabularNumeric
 import com.shashluchok.skinwatch.resources.Res
-import com.shashluchok.skinwatch.resources.dev__screen_inventory__price_history_sheet__price_axis_label
+import com.shashluchok.skinwatch.resources.dev__screen_inventory__price_history_detail__price_axis_label
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.time.Instant
@@ -100,6 +99,7 @@ private const val X_STEP_DIVISION_COUNT = 1_000.0
 internal fun PriceHistoryChart(
     snapshots: List<PriceSnapshot>,
     purchasePrice: Money?,
+    modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
     val modelProducer = remember { CartesianChartModelProducer() }
@@ -139,11 +139,11 @@ internal fun PriceHistoryChart(
     val minX = remember(snapshots) { snapshots.minOf { it.capturedAt.toEpochMilliseconds() }.toDouble() }
     val maxX = remember(snapshots) { snapshots.maxOf { it.capturedAt.toEpochMilliseconds() }.toDouble() }
     val axisTitle = stringResource(
-        Res.string.dev__screen_inventory__price_history_sheet__price_axis_label,
+        Res.string.dev__screen_inventory__price_history_detail__price_axis_label,
         currency.name,
     )
 
-    Column {
+    Column(modifier = modifier) {
         PriceHistoryChartHost(
             modelProducer = modelProducer,
             purchasePrice = purchasePrice,
@@ -186,8 +186,7 @@ private fun PriceHistoryChartHost(
         CartesianChartHost(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(CHART_HEIGHT_DP.dp)
-                .testTag(PriceHistoryBottomSheetContent.Tag.CHART),
+                .height(CHART_HEIGHT_DP.dp),
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(
                     lineProvider = priceHistoryLineProvider(purchasePriceValue = purchasePriceValue),

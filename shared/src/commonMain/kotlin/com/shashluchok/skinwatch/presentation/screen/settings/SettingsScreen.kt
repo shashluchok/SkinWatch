@@ -11,8 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetRequest
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.LocalBottomSheetHost
+import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
+import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyChangeConfirmationDialog
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.settings.component.DebugPanel
@@ -79,8 +79,9 @@ private fun SettingsScreen(
     }
 
     if (state.isCurrencyPickerVisible) {
-        LocalBottomSheetHost.current.Show(
-            BottomSheetRequest(
+        LocalModalHost.current.Show(
+            ModalRequest(
+                appearance = ModalRequest.Appearance.BottomSheet,
                 onDismissRequest = { onAction(SettingsViewModel.Action.OnDismissCurrencyPicker) },
                 content = {
                     CurrencyPickerBottomSheetContent(
@@ -102,8 +103,9 @@ private fun SettingsScreen(
     }
 
     if (state.isDebugPanelVisible) {
-        LocalBottomSheetHost.current.Show(
-            BottomSheetRequest(
+        LocalModalHost.current.Show(
+            ModalRequest(
+                appearance = ModalRequest.Appearance.BottomSheet,
                 onDismissRequest = { onAction(SettingsViewModel.Action.OnDismissDebugPanel) },
                 content = { DebugPanel() },
             ),

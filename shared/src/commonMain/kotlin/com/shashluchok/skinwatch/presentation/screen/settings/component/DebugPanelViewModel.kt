@@ -32,6 +32,10 @@ internal class DebugPanelViewModel(
     override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
 
     init {
+        subscribeToDebugSettings()
+    }
+
+    private fun subscribeToDebugSettings() {
         observeDebugSettings()
             .onEach { settings ->
                 state = state.copy(

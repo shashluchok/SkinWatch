@@ -10,7 +10,6 @@ import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInterac
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
-import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
 import kotlinx.coroutines.Job
@@ -31,7 +30,7 @@ internal class InventoryViewModel(
     data class State(
         val items: List<InventoryListItem> = emptyList(),
         val editSheet: EditSheetState? = null,
-        val priceHistorySheet: PriceHistorySheetState? = null,
+        val priceHistoryDetailAlert: PriceHistoryDetailState? = null,
         val lastSyncedAt: Instant? = null,
         val isSyncing: Boolean = false,
     )
@@ -44,7 +43,7 @@ internal class InventoryViewModel(
         val showDeleteConfirmation: Boolean = false,
     )
 
-    data class PriceHistorySheetState(
+    data class PriceHistoryDetailState(
         val item: InventoryItem,
         val snapshots: List<PriceSnapshot> = emptyList(),
         val isLoading: Boolean = true,
@@ -73,7 +72,7 @@ internal class InventoryViewModel(
 
         data object OnDismissSheet : Action
 
-        data object OnDismissPriceHistorySheet : Action
+        data object OnDismissPriceHistoryDetail : Action
 
         data object OnSyncNowClick : Action
     }
@@ -83,10 +82,22 @@ internal class InventoryViewModel(
     private var priceHistoryJob: Job? = null
 
     init {
+        subscribeToInventoryList()
+        subscribeToLastSyncedAt()
+        subscribeToSyncStatus()
+    }
+
+    private fun subscribeToInventoryList() {
         observeInventoryList().onEach { items -> state = state.copy(items = items) }.launchIn(viewModelScope)
+    }
+
+    private fun subscribeToLastSyncedAt() {
         observeLastSyncedAt()
             .onEach { lastSyncedAt -> state = state.copy(lastSyncedAt = lastSyncedAt) }
             .launchIn(viewModelScope)
+    }
+
+    private fun subscribeToSyncStatus() {
         syncPriceSnapshots.isSyncing
             .onEach { isSyncing -> state = state.copy(isSyncing = isSyncing) }
             .launchIn(viewModelScope)
@@ -102,33 +113,29 @@ internal class InventoryViewModel(
             Action.OnDeleteConfirmed -> onDeleteConfirmed()
             Action.OnDeleteCancelled -> onDeleteCancelled()
             Action.OnDismissSheet -> onDismissSheet()
-            Action.OnDismissPriceHistorySheet -> onDismissPriceHistorySheet()
+            Action.OnDismissPriceHistoryDetail -> onDismissPriceHistoryDetail()
             Action.OnSyncNowClick -> onSyncNowClick()
         }
     }
 
-    /**
-     * Opens the price history sheet for [item] and subscribes to its live snapshot history.
-     * [priceHistoryJob] tracks that subscription so it can be cancelled -- on dismiss (see
-     * [onDismissPriceHistorySheet]) or when a different item is clicked while the sheet is already
-     * open -- rather than accumulating one subscription per click for the ViewModel's whole
-     * lifetime.
-     */
     private fun onItemClick(item: InventoryItem) {
-        state = state.copy(priceHistorySheet = PriceHistorySheetState(item = item))
+        state = state.copy(priceHistoryDetailAlert = PriceHistoryDetailState(item = item))
         priceHistoryJob?.cancel()
         priceHistoryJob = observePriceHistory(item.marketHashName)
             .onEach { snapshots ->
                 state = state.copy(
-                    priceHistorySheet = state.priceHistorySheet?.copy(snapshots = snapshots, isLoading = false),
+                    priceHistoryDetailAlert = state.priceHistoryDetailAlert?.copy(
+                        snapshots = snapshots,
+                        isLoading = false,
+                    ),
                 )
             }.launchIn(viewModelScope)
     }
 
-    private fun onDismissPriceHistorySheet() {
+    private fun onDismissPriceHistoryDetail() {
         priceHistoryJob?.cancel()
         priceHistoryJob = null
-        state = state.copy(priceHistorySheet = null)
+        state = state.copy(priceHistoryDetailAlert = null)
     }
 
     /**
@@ -198,9 +205,6 @@ internal class InventoryViewModel(
     }
 
     private companion object {
-        const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
         const val MIN_QUANTITY = 1
-
-        fun formatMajorUnits(money: Money): String = (money.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT).toString()
     }
 }

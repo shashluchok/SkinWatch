@@ -72,6 +72,10 @@ internal class SettingsViewModel(
         )
 
     init {
+        subscribeToSelectedCurrency()
+    }
+
+    private fun subscribeToSelectedCurrency() {
         observeSelectedCurrency()
             .onEach { currency -> state = state.copy(selectedCurrency = currency) }
             .launchIn(viewModelScope)

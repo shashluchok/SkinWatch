@@ -1,5 +1,9 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,20 +14,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetRequest
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.LocalBottomSheetHost
+import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
+import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
+import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementKeyTransition
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncStatusBar
-import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryBottomSheetContent
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryDetailScreen
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
+import com.shashluchok.skinwatch.presentation.theme.LocalMotion
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
 import org.jetbrains.compose.resources.stringResource
@@ -48,7 +52,12 @@ private fun InventoryScreen(
     onAction: (InventoryViewModel.Action) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val sharedElementKeyTransition = LocalSharedElementKeyTransition.current
     val listState = rememberLazyListState()
+    val motion = LocalMotion.current
+    val cardVisibilityAnimationSpec = remember(motion) {
+        tween<Float>(durationMillis = motion.duration.standard, easing = motion.easing.standard)
+    }
 
     Scaffold(
         modifier = modifier.testTag(InventoryScreen.Tag.ROOT),
@@ -77,11 +86,19 @@ private fun InventoryScreen(
                 contentPadding = contentPadding,
             ) {
                 items(items = state.items, key = { it.item.id }) { listItem ->
-                    InventoryItemCard(
-                        listItem = listItem,
-                        onClick = { onAction(InventoryViewModel.Action.OnItemClick(listItem.item)) },
-                        modifier = Modifier.testTag(InventoryScreen.Tag.itemCard(listItem.item.id)),
-                    )
+                    sharedElementKeyTransition.AnimatedVisibility(
+                        visible = { openedKey -> listItem.item.id != openedKey },
+                        enter = fadeIn(cardVisibilityAnimationSpec),
+                        exit = fadeOut(cardVisibilityAnimationSpec),
+                        modifier = Modifier.animateItem(),
+                    ) {
+                        InventoryItemCard(
+                            listItem = listItem,
+                            onClick = { onAction(InventoryViewModel.Action.OnItemClick(listItem.item)) },
+                            animatedVisibilityScope = this@AnimatedVisibility,
+                            modifier = Modifier.testTag(InventoryScreen.Tag.itemCard(listItem.item.id)),
+                        )
+                    }
                 }
             }
         }
@@ -90,9 +107,11 @@ private fun InventoryScreen(
     state.editSheet?.let { sheet ->
         RegisterEditSheet(sheet = sheet, onAction = onAction)
     }
-
-    state.priceHistorySheet?.let { sheet ->
-        RegisterPriceHistorySheet(sheet = sheet, onAction = onAction)
+    state.priceHistoryDetailAlert?.let { detail ->
+        RegisterPriceHistoryDetailAlert(
+            detail = detail,
+            onDismissRequest = { onAction(InventoryViewModel.Action.OnDismissPriceHistoryDetail) },
+        )
     }
 }
 
@@ -120,8 +139,9 @@ private fun RegisterEditSheet(
     sheet: InventoryViewModel.EditSheetState,
     onAction: (InventoryViewModel.Action) -> Unit,
 ) {
-    LocalBottomSheetHost.current.Show(
-        BottomSheetRequest(
+    LocalModalHost.current.Show(
+        ModalRequest(
+            appearance = ModalRequest.Appearance.BottomSheet,
             onDismissRequest = { onAction(InventoryViewModel.Action.OnDismissSheet) },
             content = {
                 EditItemBottomSheetContent(
@@ -139,14 +159,20 @@ private fun RegisterEditSheet(
 }
 
 @Composable
-private fun RegisterPriceHistorySheet(
-    sheet: InventoryViewModel.PriceHistorySheetState,
-    onAction: (InventoryViewModel.Action) -> Unit,
+private fun RegisterPriceHistoryDetailAlert(
+    detail: InventoryViewModel.PriceHistoryDetailState,
+    onDismissRequest: () -> Unit,
 ) {
-    LocalBottomSheetHost.current.Show(
-        BottomSheetRequest(
-            onDismissRequest = { onAction(InventoryViewModel.Action.OnDismissPriceHistorySheet) },
-            content = { PriceHistoryBottomSheetContent(sheet = sheet) },
+    LocalModalHost.current.Show(
+        ModalRequest(
+            appearance = ModalRequest.Appearance.Alert(key = detail.item.id),
+            onDismissRequest = onDismissRequest,
+            content = {
+                PriceHistoryDetailScreen(
+                    detail = detail,
+                    onBackClick = onDismissRequest,
+                )
+            },
         ),
     )
 }

@@ -53,7 +53,7 @@ private const val DEGENERATE_STEP_FRACTION = 0.05
 /**
  * The all-time lowest/highest `lowestPrice` reading, in major currency units -- `0.0..0.0` if every
  * snapshot is missing a price (shouldn't happen in practice: the chart only renders once at least
- * one snapshot is priced, see `PriceHistoryBottomSheetContent`).
+ * one snapshot is priced, see `PriceHistoryDetailScreen`).
  */
 internal fun priceHistoryReadingRange(snapshots: List<PriceSnapshot>): ClosedFloatingPointRange<Double> {
     val prices = snapshots.mapNotNull { it.lowestPrice?.minorUnits }.map { it / MINOR_UNITS_PER_MAJOR_UNIT }
@@ -82,11 +82,16 @@ internal fun purchasePriceCenteredYAxisStep(minPrice: Double, maxPrice: Double, 
  * [PURCHASE_PRICE_CENTERED_STEPS_PER_SIDE] increments of [step]. Paired with a
  * `VerticalAxis.ItemPlacer.count`(`count = { PURCHASE_PRICE_CENTERED_TICK_COUNT }`) (see
  * `priceHistoryStartAxisItemPlacer`), which places that many evenly spaced labels across exactly
- * this range, landing the purchase price exactly on the centered one.
+ * this range, landing the purchase price exactly on the centered one -- except when [step] is large
+ * enough that the lower bound would go below `0.0` (a real price never does), in which case the
+ * lower bound is clamped there and the purchase price is no longer exactly centered. That only
+ * happens for a history swung heavily to one side of the purchase price, and an off-center axis
+ * beats a negative one, which the chart library fails to render at all.
  */
 internal fun purchasePriceCenteredYAxisRange(purchasePrice: Double, step: Double): ClosedFloatingPointRange<Double> {
     val halfRange = PURCHASE_PRICE_CENTERED_STEPS_PER_SIDE * step
-    return (purchasePrice - halfRange)..(purchasePrice + halfRange)
+    val start = (purchasePrice - halfRange).coerceAtLeast(0.0)
+    return start..(purchasePrice + halfRange)
 }
 
 /**

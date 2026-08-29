@@ -1,6 +1,11 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory.component
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,13 +19,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -28,7 +31,10 @@ import coil3.compose.AsyncImage
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
+import com.shashluchok.skinwatch.presentation.component.SharedElementKey
+import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
+import com.shashluchok.skinwatch.presentation.theme.LocalMotion
 import com.shashluchok.skinwatch.presentation.theme.LocalSemanticColors
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__market_price_label
@@ -39,86 +45,122 @@ import org.jetbrains.compose.resources.stringResource
 
 private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
 
-/**
- * Normalized (fraction of glyph width/height) points for [PriceHistoryGlyph]'s static up-down-up
- * polyline -- deliberately not the same "breathing glow" treatment as `NavTab.GlowIcon`, which is
- * reserved for a single selected tab at a time, not many simultaneously visible cards.
- */
-private val priceHistoryGlyphPoints = listOf(
-    Offset(x = 0f, y = 0.70f),
-    Offset(x = 0.33f, y = 0.30f),
-    Offset(x = 0.66f, y = 0.55f),
-    Offset(x = 1f, y = 0.15f),
-)
-
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 internal fun InventoryItemCard(
     listItem: InventoryListItem,
     onClick: () -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    modifier: Modifier = Modifier,
+) {
+    val (sharedTransitionScope, boundsTransform) = LocalSharedElementConfig.current
+    val dimens = LocalDimens.current
+    val motion = LocalMotion.current
+    val contentFadeSpec = remember(motion) {
+        tween<Float>(durationMillis = motion.duration.standard, easing = motion.easing.standard)
+    }
+    val openPriceHistoryLabel =
+        stringResource(Res.string.dev__screen_inventory__item_card__open_price_history__content_description)
+    val cardShape = RoundedCornerShape(dimens.radius.medium)
+
+    with(sharedTransitionScope) {
+        Card(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimens.padding.medium, vertical = dimens.padding.small)
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(
+                        key = SharedElementKey.Container(itemId = listItem.item.id),
+                    ),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = boundsTransform,
+                    enter = fadeIn(contentFadeSpec),
+                    exit = fadeOut(contentFadeSpec),
+                    resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                    clipInOverlayDuringTransition = OverlayClip(cardShape),
+                ).clickable(onClickLabel = openPriceHistoryLabel, role = Role.Button, onClick = onClick),
+            shape = cardShape,
+        ) {
+            Row(
+                modifier = Modifier.padding(dimens.padding.medium),
+                horizontalArrangement = Arrangement.spacedBy(dimens.padding.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AsyncImage(
+                    model = listItem.item.iconUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(dimens.iconSize.extraLarge)
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(
+                                key = SharedElementKey.Icon(itemId = listItem.item.id),
+                            ),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = boundsTransform,
+                        ).clip(RoundedCornerShape(dimens.radius.small))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .testTag(InventoryItemCard.Tag.ICON),
+                    contentScale = ContentScale.Crop,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        modifier = Modifier.sharedElement(
+                            sharedContentState = rememberSharedContentState(
+                                key = SharedElementKey.Title(itemId = listItem.item.id),
+                            ),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = boundsTransform,
+                        ),
+                        text = listItem.item.marketHashName,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    InventoryItemCardPrices(listItem = listItem)
+                }
+                PriceHistoryGlyph(
+                    listItem = listItem,
+                    modifier = Modifier.size(dimens.iconSize.small),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InventoryItemCardPrices(
+    listItem: InventoryListItem,
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
-    val openPriceHistoryLabel =
-        stringResource(Res.string.dev__screen_inventory__item_card__open_price_history__content_description)
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = dimens.padding.medium, vertical = dimens.padding.small)
-            .clickable(onClickLabel = openPriceHistoryLabel, role = Role.Button, onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.padding(dimens.padding.medium),
-            horizontalArrangement = Arrangement.spacedBy(dimens.padding.small),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AsyncImage(
-                model = listItem.item.iconUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(dimens.iconSize.extraLarge)
-                    .clip(RoundedCornerShape(dimens.radius.small))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .testTag(InventoryItemCard.Tag.ICON),
-                contentScale = ContentScale.Crop,
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = listItem.item.marketHashName, style = MaterialTheme.typography.titleMedium)
+    Column(modifier = modifier) {
+        Text(
+            text = "x${listItem.item.quantity}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(modifier = Modifier.padding(top = dimens.padding.small)) {
+            Column(modifier = Modifier.padding(end = dimens.padding.medium)) {
                 Text(
-                    text = "x${listItem.item.quantity}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = stringResource(Res.string.dev__screen_inventory__item_card__purchase_price_label),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Row(modifier = Modifier.padding(top = dimens.padding.small)) {
-                    Column(modifier = Modifier.padding(end = dimens.padding.medium)) {
-                        Text(
-                            text = stringResource(Res.string.dev__screen_inventory__item_card__purchase_price_label),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = formatMoney(listItem.item.purchasePrice),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                    Column {
-                        Text(
-                            text = stringResource(Res.string.dev__screen_inventory__item_card__market_price_label),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = listItem.latestSnapshot?.lowestPrice?.let(::formatMoney)
-                                ?: stringResource(Res.string.dev__screen_inventory__item_card__no_price_data),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                }
+                Text(
+                    text = formatMoney(listItem.item.purchasePrice),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
             }
-            PriceHistoryGlyph(
-                listItem = listItem,
-                modifier = Modifier.size(dimens.iconSize.small),
-            )
+            Column {
+                Text(
+                    text = stringResource(Res.string.dev__screen_inventory__item_card__market_price_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = listItem.latestSnapshot?.lowestPrice?.let(::formatMoney)
+                        ?: stringResource(Res.string.dev__screen_inventory__item_card__no_price_data),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
         }
     }
 }
@@ -137,16 +179,10 @@ private fun PriceHistoryGlyph(
         negative = semanticColors.negative,
         neutral = neutralColor,
     )
-    val strokeWidth = LocalDimens.current.border.thin
-    Canvas(modifier = modifier.testTag(InventoryItemCard.Tag.PRICE_HISTORY_GLYPH)) {
-        val path = Path().apply {
-            priceHistoryGlyphPoints.forEachIndexed { index, point ->
-                val offset = Offset(x = point.x * size.width, y = point.y * size.height)
-                if (index == 0) moveTo(x = offset.x, y = offset.y) else lineTo(x = offset.x, y = offset.y)
-            }
-        }
-        drawPath(path = path, color = strokeColor, style = Stroke(width = strokeWidth.toPx()))
-    }
+    PriceTrendGlyph(
+        color = strokeColor,
+        modifier = modifier.testTag(InventoryItemCard.Tag.PRICE_HISTORY_GLYPH),
+    )
 }
 
 internal fun priceHistoryGlyphColor(

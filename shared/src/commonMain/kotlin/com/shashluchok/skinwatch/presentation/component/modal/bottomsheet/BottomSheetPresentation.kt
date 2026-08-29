@@ -1,4 +1,4 @@
-package com.shashluchok.skinwatch.presentation.component.bottomsheet
+package com.shashluchok.skinwatch.presentation.component.modal.bottomsheet
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
+import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazePerformanceMode
@@ -55,17 +57,20 @@ private val DRAG_HANDLE_GAP_ABOVE_CONTENT = 28.dp
 private const val DRAG_HANDLE_BACKGROUND_ALPHA = 0.12f
 
 /**
- * The single app-level bottom sheet.
+ * The single app-level bottom sheet. Unlike `AlertPresentation`, this can be gated on
+ * [LocalModalHost]'s current request being non-null: `ModalBottomSheet` plays its own hide
+ * animation while it stays composed, it doesn't need to be kept mounted past that.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PartialHeightModalBottomSheet(
-    onDismissRequest: () -> Unit,
+internal fun BottomSheetPresentation(
     hazeState: HazeState,
     modifier: Modifier = Modifier,
     containerColor: Color = BottomSheetDefaults.ContainerColor,
-    content: @Composable () -> Unit,
 ) {
+    val request = LocalModalHost.current.currentRequest?.takeIf { it.appearance == ModalRequest.Appearance.BottomSheet }
+        ?: return
+    val onDismissRequest = request.onDismissRequest
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val density = LocalDensity.current
     val easing = LocalMotion.current.easing.standard
@@ -144,7 +149,7 @@ internal fun PartialHeightModalBottomSheet(
                 topOffset = dragHandleTopOffset,
             )
             Box(modifier = Modifier.padding(top = statusBarHeight)) {
-                content()
+                request.content()
             }
         }
     }

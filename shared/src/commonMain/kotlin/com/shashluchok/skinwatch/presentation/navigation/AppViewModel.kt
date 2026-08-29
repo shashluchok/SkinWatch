@@ -27,6 +27,8 @@ internal class AppViewModel(
         data object SplashScreenAnimationFinished : Action
     }
 
+    override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
+
     init {
         priceSyncScheduler.schedulePeriodicSync()
         catalogSyncScheduler.schedulePeriodicSync()
@@ -34,8 +36,6 @@ internal class AppViewModel(
         viewModelScope.launch { syncCatalogItemsIfStale() }
         checkSplashScreenAvailability()
     }
-
-    override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
 
     override fun onAction(action: Action) = when (action) {
         Action.SplashScreenAnimationFinished -> onSplashScreenAnimationFinished()

@@ -1,8 +1,6 @@
 package com.shashluchok.skinwatch.presentation.screen.main
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -20,13 +18,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
@@ -35,10 +28,9 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetHostImpl
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.BottomSheetRequest
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.LocalBottomSheetHost
-import com.shashluchok.skinwatch.presentation.component.bottomsheet.PartialHeightModalBottomSheet
+import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
+import com.shashluchok.skinwatch.presentation.component.modal.host.ModalHostContent
+import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.navigation.config.navigationConfig
 import com.shashluchok.skinwatch.presentation.navigation.destination.Inventory
 import com.shashluchok.skinwatch.presentation.navigation.navtab.GlowIcon
@@ -48,14 +40,12 @@ import com.shashluchok.skinwatch.presentation.screen.main.component.AddFab
 import com.shashluchok.skinwatch.presentation.screen.main.component.AddItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.settings.SettingsScreen
 import com.shashluchok.skinwatch.presentation.screen.watchlist.WatchlistScreen
-import com.shashluchok.skinwatch.presentation.theme.LocalMotion
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val NAV_BAR_ITEM_INDICATOR_ALPHA = 0.16f
-private const val PAGER_UNSETTLED_SCALE = 0.96f
 private val enabledNavTabs = NavTab.entries.filter { it.isEnabled }
 
 @Composable
@@ -82,7 +72,6 @@ private fun MainScreen(
         elements = arrayOf(Inventory),
     )
     val pagerState = rememberPagerState(pageCount = { enabledNavTabs.size })
-    val bottomSheetHost = remember { BottomSheetHostImpl() }
 
     SyncPagerWithBackStack(
         backStack = backStack,
@@ -90,7 +79,7 @@ private fun MainScreen(
     )
     NavigateToInventoryOnBack(backStack = backStack)
 
-    CompositionLocalProvider(LocalBottomSheetHost provides bottomSheetHost) {
+    ProvideMainScreenAmbients {
         val hazeState = rememberHazeState()
         val currentTab = enabledNavTabs.first { it.destination == backStack.lastOrNull() }
 
@@ -110,30 +99,13 @@ private fun MainScreen(
                 )
             },
         ) { contentPadding ->
-            val motion = LocalMotion.current
-
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding),
             ) { page ->
-                val isSettledActive = !pagerState.isScrollInProgress
-                val scale by animateFloatAsState(
-                    targetValue = if (isSettledActive) 1f else PAGER_UNSETTLED_SCALE,
-                    animationSpec = tween(
-                        durationMillis = if (isSettledActive) motion.duration.standard else motion.duration.instant,
-                    ),
-                )
-
-                enabledNavTabs[page].ScreenContent(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        },
-                )
+                enabledNavTabs[page].ScreenContent(modifier = Modifier.fillMaxSize())
             }
         }
 
@@ -141,14 +113,7 @@ private fun MainScreen(
             RegisterAddSheet(sheet = sheet, onAction = onAction)
         }
 
-        bottomSheetHost.currentRequest?.let { request ->
-            PartialHeightModalBottomSheet(
-                onDismissRequest = request.onDismissRequest,
-                hazeState = hazeState,
-            ) {
-                request.content()
-            }
-        }
+        ModalHostContent(hazeState = hazeState)
     }
 }
 
@@ -157,8 +122,9 @@ private fun RegisterAddSheet(
     sheet: MainViewModel.AddSheetState,
     onAction: (MainViewModel.Action) -> Unit,
 ) {
-    LocalBottomSheetHost.current.Show(
-        BottomSheetRequest(
+    LocalModalHost.current.Show(
+        ModalRequest(
+            appearance = ModalRequest.Appearance.BottomSheet,
             onDismissRequest = { onAction(MainViewModel.Action.OnDismissSheet) },
             content = {
                 AddItemBottomSheetContent(
@@ -260,9 +226,7 @@ private fun NavigateToInventoryOnBack(backStack: NavBackStack<NavKey>) {
 }
 
 @Composable
-private fun NavTab.ScreenContent(
-    modifier: Modifier = Modifier,
-) {
+private fun NavTab.ScreenContent(modifier: Modifier = Modifier) {
     when (this) {
         NavTab.INVENTORY -> InventoryScreen(modifier = modifier)
         NavTab.WATCHLIST -> WatchlistScreen(modifier = modifier)

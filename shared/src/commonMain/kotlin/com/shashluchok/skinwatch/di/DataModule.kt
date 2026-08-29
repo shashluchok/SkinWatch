@@ -38,6 +38,9 @@ import com.shashluchok.skinwatch.domain.pricesync.PriceSyncStatusRepository
 import com.shashluchok.skinwatch.domain.settings.SettingsRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
 import com.shashluchok.skinwatch.domain.watchlist.WatchlistRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -109,6 +112,7 @@ internal val dataModule = module {
     single<CatalogSyncStatusRepository> { CatalogSyncStatusRepositoryImpl(dao = get()) }
 
     // Debug
+    single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
     single { get<AppDatabase>().debugSettingsDao() }
-    single<DebugSettingsRepository> { DebugSettingsRepositoryImpl(dao = get()) }
+    single<DebugSettingsRepository> { DebugSettingsRepositoryImpl(dao = get(), scope = get()) }
 }

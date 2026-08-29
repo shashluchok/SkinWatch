@@ -109,7 +109,7 @@ class InventoryViewModelTest {
     }
 
     @Test
-    fun `OnItemClick opens the price history sheet for the clicked item`() = runTest(dispatcher) {
+    fun `OnItemClick opens the price history detail for the clicked item`() = runTest(dispatcher) {
         val viewModel = newViewModel()
         val id = inventoryRepository.addItem(
             marketHashName = "USP-S | Kill Confirmed (Minimal Wear)",
@@ -126,7 +126,7 @@ class InventoryViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertNull(viewModel.stateFlow.value.editSheet)
-        val sheet = viewModel.stateFlow.value.priceHistorySheet
+        val sheet = viewModel.stateFlow.value.priceHistoryDetailAlert
         check(sheet != null)
         assertEquals(id, sheet.item.id)
     }
@@ -154,14 +154,14 @@ class InventoryViewModelTest {
         )
         dispatcher.scheduler.runCurrent()
 
-        val snapshots = viewModel.stateFlow.value.priceHistorySheet
+        val snapshots = viewModel.stateFlow.value.priceHistoryDetailAlert
             ?.snapshots
         assertEquals(1, snapshots?.size)
         assertEquals(Money(minorUnits = 5000, currency = SteamCurrency.USD), snapshots?.single()?.lowestPrice)
     }
 
     @Test
-    fun `OnDismissPriceHistorySheet closes the sheet and stops reflecting new snapshots`() = runTest(dispatcher) {
+    fun `OnDismissPriceHistoryDetail closes the detail and stops reflecting new snapshots`() = runTest(dispatcher) {
         val viewModel = newViewModel()
         val hashName = "P250 | Sand Dune"
         inventoryRepository.addItem(
@@ -177,7 +177,7 @@ class InventoryViewModelTest {
         viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
         dispatcher.scheduler.runCurrent()
 
-        viewModel.onAction(InventoryViewModel.Action.OnDismissPriceHistorySheet)
+        viewModel.onAction(InventoryViewModel.Action.OnDismissPriceHistoryDetail)
         priceSnapshotRepository.emitSnapshot(
             marketHashName = hashName,
             lowestPrice = Money(minorUnits = 7000, currency = SteamCurrency.USD),
@@ -185,11 +185,11 @@ class InventoryViewModelTest {
         )
         dispatcher.scheduler.runCurrent()
 
-        assertNull(viewModel.stateFlow.value.priceHistorySheet)
+        assertNull(viewModel.stateFlow.value.priceHistoryDetailAlert)
     }
 
     @Test
-    fun `OnItemClick for a different item while the sheet is open cancels the previous subscription`() =
+    fun `OnItemClick for a different item while the detail is open cancels the previous subscription`() =
         runTest(dispatcher) {
             val viewModel = newViewModel()
             val firstHashName = "P250 | Sand Dune"
@@ -223,7 +223,7 @@ class InventoryViewModelTest {
             )
             dispatcher.scheduler.runCurrent()
 
-            val sheet = viewModel.stateFlow.value.priceHistorySheet
+            val sheet = viewModel.stateFlow.value.priceHistoryDetailAlert
             check(sheet != null)
             assertEquals(secondItem.id, sheet.item.id)
             assertEquals(emptyList(), sheet.snapshots)

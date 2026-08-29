@@ -97,9 +97,16 @@ class PriceHistoryChartTest {
 
     @Test
     fun `purchasePriceCenteredYAxisRange centers the purchase price with 3 steps on each side`() {
+        val range = purchasePriceCenteredYAxisRange(purchasePrice = 100.0, step = 15.0)
+
+        assertEquals(expected = 55.0..145.0, actual = range)
+    }
+
+    @Test
+    fun `purchasePriceCenteredYAxisRange clamps a would-be-negative lower bound to 0`() {
         val range = purchasePriceCenteredYAxisRange(purchasePrice = 20.0, step = 15.0)
 
-        assertEquals(expected = -25.0..65.0, actual = range)
+        assertEquals(expected = 0.0..65.0, actual = range)
     }
 
     @Test
