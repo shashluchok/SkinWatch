@@ -28,6 +28,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.shashluchok.skinwatch.presentation.component.AnimatedFadeText
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalHostContent
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
@@ -88,7 +89,7 @@ private fun MainScreen(
             topBar = {
                 TopAppBar(
                     modifier = Modifier.testTag(MainScreen.Tag.TOP_BAR),
-                    title = { Text(text = stringResource(currentTab.labelRes)) },
+                    title = { AnimatedFadeText(text = stringResource(currentTab.labelRes)) },
                 )
             },
             bottomBar = { MainNavigationBar(backStack = backStack) },
@@ -101,6 +102,7 @@ private fun MainScreen(
         ) { contentPadding ->
             HorizontalPager(
                 state = pagerState,
+                userScrollEnabled = false,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding),
@@ -195,19 +197,7 @@ private fun SyncPagerWithBackStack(
     val currentTabIndex = enabledNavTabs.indexOf(currentTab)
 
     LaunchedEffect(currentTabIndex) {
-        if (pagerState.targetPage != currentTabIndex) {
-            pagerState.animateScrollToPage(
-                page = currentTabIndex,
-            )
-        }
-    }
-
-    LaunchedEffect(pagerState.settledPage) {
-        val settledDestination = enabledNavTabs[pagerState.settledPage].destination
-        if (backStack.lastOrNull() != settledDestination) {
-            backStack.clear()
-            backStack.add(settledDestination)
-        }
+        pagerState.animateScrollToPage(page = currentTabIndex)
     }
 }
 
