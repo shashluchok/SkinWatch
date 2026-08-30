@@ -1,14 +1,17 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory.component
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +41,8 @@ import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalShare
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
 import com.shashluchok.skinwatch.resources.Res
+import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__delete
+import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__edit
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__market_price_label
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__no_price_data
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__open_price_history__content_description
@@ -44,11 +51,16 @@ import org.jetbrains.compose.resources.stringResource
 
 private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
 internal fun InventoryItemCard(
     listItem: InventoryListItem,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    isContextMenuExpanded: Boolean,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onDismissContextMenu: () -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier,
 ) {
@@ -63,64 +75,121 @@ internal fun InventoryItemCard(
     val cardShape = RoundedCornerShape(dimens.radius.medium)
 
     with(sharedTransitionScope) {
-        Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = dimens.padding.medium, vertical = dimens.padding.small)
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(
-                        key = SharedElementKey.Container(itemId = listItem.item.id),
-                    ),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = boundsTransform,
-                    enter = fadeIn(contentFadeSpec),
-                    exit = fadeOut(contentFadeSpec),
-                    resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
-                    clipInOverlayDuringTransition = OverlayClip(cardShape),
-                ).clickable(onClickLabel = openPriceHistoryLabel, role = Role.Button, onClick = onClick),
-            shape = cardShape,
-        ) {
-            Row(
-                modifier = Modifier.padding(dimens.padding.medium),
-                horizontalArrangement = Arrangement.spacedBy(dimens.padding.small),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AsyncImage(
-                    model = listItem.item.iconUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(dimens.iconSize.extraLarge)
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(
-                                key = SharedElementKey.Icon(itemId = listItem.item.id),
-                            ),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = boundsTransform,
-                        ).clip(RoundedCornerShape(dimens.radius.small))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .testTag(InventoryItemCard.Tag.ICON),
-                    contentScale = ContentScale.Crop,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        modifier = Modifier.sharedElement(
-                            sharedContentState = rememberSharedContentState(
-                                key = SharedElementKey.Title(itemId = listItem.item.id),
-                            ),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = boundsTransform,
+        Box(modifier = modifier) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimens.padding.medium, vertical = dimens.padding.small)
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(
+                            key = SharedElementKey.Container(itemId = listItem.item.id),
                         ),
-                        text = listItem.item.marketHashName,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    InventoryItemCardPrices(listItem = listItem)
-                }
-                PriceHistoryGlyph(
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = boundsTransform,
+                        enter = fadeIn(contentFadeSpec),
+                        exit = fadeOut(contentFadeSpec),
+                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                        clipInOverlayDuringTransition = OverlayClip(cardShape),
+                    ).combinedClickable(
+                        onClickLabel = openPriceHistoryLabel,
+                        role = Role.Button,
+                        onLongClick = onLongClick,
+                        onClick = onClick,
+                    ),
+                shape = cardShape,
+            ) {
+                InventoryItemCardRow(
                     listItem = listItem,
-                    modifier = Modifier.size(dimens.iconSize.small),
+                    sharedTransitionScope = sharedTransitionScope,
+                    boundsTransform = boundsTransform,
+                    animatedVisibilityScope = animatedVisibilityScope,
                 )
             }
+            InventoryItemCardContextMenu(
+                expanded = isContextMenuExpanded,
+                onEditClick = onEditClick,
+                onDeleteClick = onDeleteClick,
+                onDismissRequest = onDismissContextMenu,
+            )
         }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun InventoryItemCardRow(
+    listItem: InventoryListItem,
+    sharedTransitionScope: SharedTransitionScope,
+    boundsTransform: BoundsTransform,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    modifier: Modifier = Modifier,
+) {
+    val dimens = LocalDimens.current
+    with(sharedTransitionScope) {
+        Row(
+            modifier = modifier.padding(dimens.padding.medium),
+            horizontalArrangement = Arrangement.spacedBy(dimens.padding.small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                model = listItem.item.iconUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(dimens.iconSize.extraLarge)
+                    .sharedElement(
+                        sharedContentState = rememberSharedContentState(
+                            key = SharedElementKey.Icon(itemId = listItem.item.id),
+                        ),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = boundsTransform,
+                    ).clip(RoundedCornerShape(dimens.radius.small))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .testTag(InventoryItemCard.Tag.ICON),
+                contentScale = ContentScale.Crop,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    modifier = Modifier.sharedElement(
+                        sharedContentState = rememberSharedContentState(
+                            key = SharedElementKey.Title(itemId = listItem.item.id),
+                        ),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = boundsTransform,
+                    ),
+                    text = listItem.item.marketHashName,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                InventoryItemCardPrices(listItem = listItem)
+            }
+            PriceHistoryGlyph(
+                listItem = listItem,
+                modifier = Modifier.size(dimens.iconSize.small),
+            )
+        }
+    }
+}
+
+@Composable
+private fun InventoryItemCardContextMenu(
+    expanded: Boolean,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+    ) {
+        DropdownMenuItem(
+            text = { Text(text = stringResource(Res.string.dev__screen_inventory__item_card__edit)) },
+            onClick = onEditClick,
+            modifier = Modifier.testTag(InventoryItemCard.Tag.CONTEXT_MENU_EDIT),
+        )
+        DropdownMenuItem(
+            text = { Text(text = stringResource(Res.string.dev__screen_inventory__item_card__delete)) },
+            onClick = onDeleteClick,
+            modifier = Modifier.testTag(InventoryItemCard.Tag.CONTEXT_MENU_DELETE),
+        )
     }
 }
 
@@ -205,5 +274,7 @@ internal object InventoryItemCard {
         private const val ROOT = "InventoryItemCard"
         const val ICON = "$ROOT.icon"
         const val PRICE_HISTORY_GLYPH = "$ROOT.priceHistoryGlyph"
+        const val CONTEXT_MENU_EDIT = "$ROOT.contextMenu.edit"
+        const val CONTEXT_MENU_DELETE = "$ROOT.contextMenu.delete"
     }
 }

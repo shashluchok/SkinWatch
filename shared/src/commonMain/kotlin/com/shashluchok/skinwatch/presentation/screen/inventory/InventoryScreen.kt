@@ -1,6 +1,8 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
@@ -19,10 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
 import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementKeyTransition
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.DeleteConfirmationDialog
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncStatusBar
@@ -96,22 +101,13 @@ private fun InventoryScreen(
                     key = { it.item.id },
                     contentType = { ITEM_CARD_CONTENT_TYPE },
                 ) { listItem ->
-                    val onItemClick = remember(listItem.item) {
-                        { onAction(InventoryViewModel.Action.OnItemClick(listItem.item)) }
-                    }
-                    sharedElementKeyTransition.AnimatedVisibility(
-                        visible = { openedKey -> listItem.item.id != openedKey },
-                        enter = fadeIn(cardVisibilityAnimationSpec),
-                        exit = fadeOut(cardVisibilityAnimationSpec),
-                        modifier = Modifier.animateItem(),
-                    ) {
-                        InventoryItemCard(
-                            listItem = listItem,
-                            onClick = onItemClick,
-                            animatedVisibilityScope = this@AnimatedVisibility,
-                            modifier = Modifier.testTag(InventoryScreen.Tag.itemCard(listItem.item.id)),
-                        )
-                    }
+                    InventoryScreenItem(
+                        listItem = listItem,
+                        isContextMenuExpanded = state.contextMenuItem?.id == listItem.item.id,
+                        sharedElementKeyTransition = sharedElementKeyTransition,
+                        cardVisibilityAnimationSpec = cardVisibilityAnimationSpec,
+                        onAction = onAction,
+                    )
                 }
             }
         }
@@ -120,10 +116,47 @@ private fun InventoryScreen(
     state.editSheet?.let { sheet ->
         RegisterEditSheet(sheet = sheet, onAction = onAction)
     }
+    if (state.deleteConfirmationItem != null) {
+        RegisterDeleteConfirmation(onAction = onAction)
+    }
     state.priceHistoryDetailAlert?.let { detail ->
         RegisterPriceHistoryDetailAlert(
             detail = detail,
             onDismissRequest = { onAction(InventoryViewModel.Action.OnDismissPriceHistoryDetail) },
+        )
+    }
+}
+
+@Composable
+private fun LazyItemScope.InventoryScreenItem(
+    listItem: InventoryListItem,
+    isContextMenuExpanded: Boolean,
+    sharedElementKeyTransition: Transition<Long?>,
+    cardVisibilityAnimationSpec: FiniteAnimationSpec<Float>,
+    onAction: (InventoryViewModel.Action) -> Unit,
+) {
+    val onItemClick = remember(listItem.item) {
+        { onAction(InventoryViewModel.Action.OnItemClick(listItem.item)) }
+    }
+    val onItemLongClick = remember(listItem.item) {
+        { onAction(InventoryViewModel.Action.OnItemLongClick(listItem.item)) }
+    }
+    sharedElementKeyTransition.AnimatedVisibility(
+        visible = { openedKey -> listItem.item.id != openedKey },
+        enter = fadeIn(cardVisibilityAnimationSpec),
+        exit = fadeOut(cardVisibilityAnimationSpec),
+        modifier = Modifier.animateItem(),
+    ) {
+        InventoryItemCard(
+            listItem = listItem,
+            onClick = onItemClick,
+            onLongClick = onItemLongClick,
+            isContextMenuExpanded = isContextMenuExpanded,
+            onEditClick = { onAction(InventoryViewModel.Action.OnContextMenuEditClick) },
+            onDeleteClick = { onAction(InventoryViewModel.Action.OnContextMenuDeleteClick) },
+            onDismissContextMenu = { onAction(InventoryViewModel.Action.OnContextMenuDismiss) },
+            animatedVisibilityScope = this@AnimatedVisibility,
+            modifier = Modifier.testTag(InventoryScreen.Tag.itemCard(listItem.item.id)),
         )
     }
 }
@@ -162,12 +195,17 @@ private fun RegisterEditSheet(
                     onQuantityChange = { onAction(InventoryViewModel.Action.OnQuantityChanged(it)) },
                     onPurchasePriceChange = { onAction(InventoryViewModel.Action.OnPurchasePriceChanged(it)) },
                     onSaveClick = { onAction(InventoryViewModel.Action.OnSaveClick) },
-                    onDeleteClick = { onAction(InventoryViewModel.Action.OnDeleteClick) },
-                    onDeleteConfirm = { onAction(InventoryViewModel.Action.OnDeleteConfirmed) },
-                    onDeleteCancel = { onAction(InventoryViewModel.Action.OnDeleteCancelled) },
                 )
             },
         ),
+    )
+}
+
+@Composable
+private fun RegisterDeleteConfirmation(onAction: (InventoryViewModel.Action) -> Unit) {
+    DeleteConfirmationDialog(
+        onConfirm = { onAction(InventoryViewModel.Action.OnDeleteConfirmed) },
+        onCancel = { onAction(InventoryViewModel.Action.OnDeleteCancelled) },
     )
 }
 

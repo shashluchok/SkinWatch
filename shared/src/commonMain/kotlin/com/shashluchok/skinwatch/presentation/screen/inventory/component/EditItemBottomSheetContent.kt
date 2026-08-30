@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,21 +14,17 @@ import com.shashluchok.skinwatch.presentation.component.ItemDetailsForm
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewModel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
-import com.shashluchok.skinwatch.resources.dev__screen_inventory__edit_sheet__delete_button
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__edit_sheet__title
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__save_button
 import org.jetbrains.compose.resources.stringResource
 
-/** Content of the edit-item bottom sheet. */
+/** Deletion is only reachable from the item card's long-press context menu, not from here. */
 @Composable
 internal fun EditItemBottomSheetContent(
     sheet: InventoryViewModel.EditSheetState,
     onQuantityChange: (String) -> Unit,
     onPurchasePriceChange: (String) -> Unit,
     onSaveClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onDeleteConfirm: () -> Unit,
-    onDeleteCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
@@ -54,23 +49,7 @@ internal fun EditItemBottomSheetContent(
             ) {
                 Text(text = stringResource(Res.string.dev__screen_inventory__item_form__save_button))
             }
-            OutlinedButton(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = dimens.padding.small)
-                    .testTag(EditItemBottomSheetContent.Tag.DELETE_BUTTON),
-                onClick = onDeleteClick,
-            ) {
-                Text(text = stringResource(Res.string.dev__screen_inventory__edit_sheet__delete_button))
-            }
         }
-    }
-
-    if (sheet.showDeleteConfirmation) {
-        DeleteConfirmationDialog(
-            onConfirm = onDeleteConfirm,
-            onCancel = onDeleteCancel,
-        )
     }
 }
 
@@ -78,6 +57,5 @@ internal object EditItemBottomSheetContent {
     object Tag {
         const val ROOT = "EditItemBottomSheetContent"
         const val SAVE_BUTTON = "$ROOT.saveButton"
-        const val DELETE_BUTTON = "$ROOT.deleteButton"
     }
 }

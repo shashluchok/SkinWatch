@@ -10,6 +10,7 @@ import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInterac
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
+import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
 import kotlinx.coroutines.Job
@@ -30,6 +31,8 @@ internal class InventoryViewModel(
     data class State(
         val items: List<InventoryListItem> = emptyList(),
         val editSheet: EditSheetState? = null,
+        val contextMenuItem: InventoryItem? = null,
+        val deleteConfirmationItem: InventoryItem? = null,
         val priceHistoryDetailAlert: PriceHistoryDetailState? = null,
         val lastSyncedAt: Instant? = null,
         val isSyncing: Boolean = false,
@@ -40,7 +43,6 @@ internal class InventoryViewModel(
         val quantity: String,
         val purchasePrice: String,
         val validationError: ValidationError? = null,
-        val showDeleteConfirmation: Boolean = false,
     )
 
     data class PriceHistoryDetailState(
@@ -54,6 +56,16 @@ internal class InventoryViewModel(
             val item: InventoryItem,
         ) : Action
 
+        data class OnItemLongClick(
+            val item: InventoryItem,
+        ) : Action
+
+        data object OnContextMenuEditClick : Action
+
+        data object OnContextMenuDeleteClick : Action
+
+        data object OnContextMenuDismiss : Action
+
         data class OnQuantityChanged(
             val value: String,
         ) : Action
@@ -63,8 +75,6 @@ internal class InventoryViewModel(
         ) : Action
 
         data object OnSaveClick : Action
-
-        data object OnDeleteClick : Action
 
         data object OnDeleteConfirmed : Action
 
@@ -106,10 +116,13 @@ internal class InventoryViewModel(
     override fun onAction(action: Action) {
         when (action) {
             is Action.OnItemClick -> onItemClick(action.item)
+            is Action.OnItemLongClick -> onItemLongClick(action.item)
+            Action.OnContextMenuEditClick -> onContextMenuEditClick()
+            Action.OnContextMenuDeleteClick -> onContextMenuDeleteClick()
+            Action.OnContextMenuDismiss -> onContextMenuDismiss()
             is Action.OnQuantityChanged -> onQuantityChanged(action.value)
             is Action.OnPurchasePriceChanged -> onPurchasePriceChanged(action.value)
             Action.OnSaveClick -> onSaveClick()
-            Action.OnDeleteClick -> onDeleteClick()
             Action.OnDeleteConfirmed -> onDeleteConfirmed()
             Action.OnDeleteCancelled -> onDeleteCancelled()
             Action.OnDismissSheet -> onDismissSheet()
@@ -137,6 +150,33 @@ internal class InventoryViewModel(
         priceHistoryJob = null
         state = state.copy(priceHistoryDetailAlert = null)
     }
+
+    private fun onItemLongClick(item: InventoryItem) {
+        state = state.copy(contextMenuItem = item)
+    }
+
+    private fun onContextMenuDismiss() {
+        state = state.copy(contextMenuItem = null)
+    }
+
+    private fun onContextMenuEditClick() {
+        val item = state.contextMenuItem ?: return
+        state = state.copy(
+            contextMenuItem = null,
+            editSheet = EditSheetState(
+                item = item,
+                quantity = item.quantity.toString(),
+                purchasePrice = item.purchasePrice.toEditableAmountString(),
+            ),
+        )
+    }
+
+    private fun onContextMenuDeleteClick() {
+        val item = state.contextMenuItem ?: return
+        state = state.copy(contextMenuItem = null, deleteConfirmationItem = item)
+    }
+
+    private fun Money.toEditableAmountString(): String = (minorUnits / MINOR_UNITS_PER_MAJOR_UNIT).toString()
 
     /**
      * A tap during an already-in-flight run is safe -- [SyncPriceSnapshotsInteractor]'s own mutex
@@ -188,23 +228,20 @@ internal class InventoryViewModel(
     private fun String.toValidatedAmountOrNull(): Double? =
         takeIf { it.isNotBlank() }?.toDoubleOrNull()?.takeIf { it > 0 }
 
-    private fun onDeleteClick() {
-        updateSheet { it.copy(showDeleteConfirmation = true) }
-    }
-
     private fun onDeleteCancelled() {
-        updateSheet { it.copy(showDeleteConfirmation = false) }
+        state = state.copy(deleteConfirmationItem = null)
     }
 
     private fun onDeleteConfirmed() {
-        val sheet = state.editSheet ?: return
+        val item = state.deleteConfirmationItem ?: return
         viewModelScope.launch {
-            removeInventoryItem(sheet.item.id)
-            state = state.copy(editSheet = null)
+            removeInventoryItem(item.id)
+            state = state.copy(deleteConfirmationItem = null)
         }
     }
 
     private companion object {
         const val MIN_QUANTITY = 1
+        const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
     }
 }

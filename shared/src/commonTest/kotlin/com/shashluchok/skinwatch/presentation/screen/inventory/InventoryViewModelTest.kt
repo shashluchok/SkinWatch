@@ -11,7 +11,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -270,8 +269,95 @@ class InventoryViewModelTest {
         assertEquals(false, viewModel.stateFlow.value.isSyncing)
     }
 
-    // OnItemClick no longer reaches editSheet -- see skinwatch-bhs.
-    @Ignore
+    @Test
+    fun `OnItemLongClick opens the context menu for the long-pressed item`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        inventoryRepository.addItem(
+            marketHashName = "Item",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
+        )
+        dispatcher.scheduler.runCurrent()
+        val item = viewModel.stateFlow.value.items
+            .single()
+            .item
+
+        viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+
+        assertEquals(item, viewModel.stateFlow.value.contextMenuItem)
+    }
+
+    @Test
+    fun `OnContextMenuDismiss closes the context menu`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        inventoryRepository.addItem(
+            marketHashName = "Item",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
+        )
+        dispatcher.scheduler.runCurrent()
+        val item = viewModel.stateFlow.value.items
+            .single()
+            .item
+        viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+
+        viewModel.onAction(InventoryViewModel.Action.OnContextMenuDismiss)
+
+        assertNull(viewModel.stateFlow.value.contextMenuItem)
+    }
+
+    @Test
+    fun `OnContextMenuEditClick opens the edit sheet prefilled from the item`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        inventoryRepository.addItem(
+            marketHashName = "M4A4 | Howl (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 3,
+            purchasePrice = Money(minorUnits = 2500, currency = SteamCurrency.USD),
+        )
+        dispatcher.scheduler.runCurrent()
+        val item = viewModel.stateFlow.value.items
+            .single()
+            .item
+        viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+
+        viewModel.onAction(InventoryViewModel.Action.OnContextMenuEditClick)
+
+        assertNull(viewModel.stateFlow.value.contextMenuItem)
+        assertNull(viewModel.stateFlow.value.deleteConfirmationItem)
+        val sheet = viewModel.stateFlow.value.editSheet
+        check(sheet != null)
+        assertEquals(item, sheet.item)
+        assertEquals("3", sheet.quantity)
+        assertEquals("25.0", sheet.purchasePrice)
+    }
+
+    @Test
+    fun `OnContextMenuDeleteClick shows the delete confirmation without opening the edit sheet`() =
+        runTest(dispatcher) {
+            val viewModel = newViewModel()
+            inventoryRepository.addItem(
+                marketHashName = "Item",
+                iconUrl = "https://example.com/icon.png",
+                quantity = 1,
+                purchasePrice = SAMPLE_PURCHASE_PRICE,
+            )
+            dispatcher.scheduler.runCurrent()
+            val item = viewModel.stateFlow.value.items
+                .single()
+                .item
+            viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+
+            viewModel.onAction(InventoryViewModel.Action.OnContextMenuDeleteClick)
+
+            assertNull(viewModel.stateFlow.value.contextMenuItem)
+            assertNull(viewModel.stateFlow.value.editSheet)
+            assertEquals(item, viewModel.stateFlow.value.deleteConfirmationItem)
+            assertEquals(emptyList(), inventoryRepository.removedIds)
+        }
+
     @Test
     fun `saving Edit with valid fields calls updateItem and closes the sheet`() = runTest(dispatcher) {
         val viewModel = newViewModel()
@@ -285,7 +371,8 @@ class InventoryViewModelTest {
         val item = viewModel.stateFlow.value.items
             .single()
             .item
-        viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
+        viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+        viewModel.onAction(InventoryViewModel.Action.OnContextMenuEditClick)
 
         viewModel.onAction(InventoryViewModel.Action.OnQuantityChanged("4"))
         viewModel.onAction(InventoryViewModel.Action.OnSaveClick)
@@ -298,8 +385,6 @@ class InventoryViewModelTest {
         assertNull(viewModel.stateFlow.value.editSheet)
     }
 
-    // OnItemClick no longer reaches editSheet -- see skinwatch-bhs.
-    @Ignore
     @Test
     fun `an invalid quantity blocks Edit save and sets a validation error`() = runTest(dispatcher) {
         val viewModel = newViewModel()
@@ -313,7 +398,8 @@ class InventoryViewModelTest {
         val item = viewModel.stateFlow.value.items
             .single()
             .item
-        viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
+        viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+        viewModel.onAction(InventoryViewModel.Action.OnContextMenuEditClick)
 
         viewModel.onAction(InventoryViewModel.Action.OnQuantityChanged("-1"))
         viewModel.onAction(InventoryViewModel.Action.OnSaveClick)
@@ -325,10 +411,8 @@ class InventoryViewModelTest {
         assertEquals(emptyList(), inventoryRepository.updatedItems)
     }
 
-    // OnItemClick no longer reaches editSheet -- see skinwatch-bhs.
-    @Ignore
     @Test
-    fun `OnDeleteClick shows the confirmation flag without deleting`() = runTest(dispatcher) {
+    fun `OnDeleteCancelled clears the confirmation without deleting`() = runTest(dispatcher) {
         val viewModel = newViewModel()
         inventoryRepository.addItem(
             marketHashName = "Item",
@@ -340,63 +424,37 @@ class InventoryViewModelTest {
         val item = viewModel.stateFlow.value.items
             .single()
             .item
-        viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
-
-        viewModel.onAction(InventoryViewModel.Action.OnDeleteClick)
-
-        val sheet = viewModel.stateFlow.value.editSheet
-        check(sheet != null)
-        assertEquals(true, sheet.showDeleteConfirmation)
-        assertEquals(emptyList(), inventoryRepository.removedIds)
-    }
-
-    // OnItemClick no longer reaches editSheet -- see skinwatch-bhs.
-    @Ignore
-    @Test
-    fun `OnDeleteCancelled clears the confirmation flag and keeps the sheet open`() = runTest(dispatcher) {
-        val viewModel = newViewModel()
-        inventoryRepository.addItem(
-            marketHashName = "Item",
-            iconUrl = "https://example.com/icon.png",
-            quantity = 1,
-            purchasePrice = SAMPLE_PURCHASE_PRICE,
-        )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
-            .single()
-            .item
-        viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
-        viewModel.onAction(InventoryViewModel.Action.OnDeleteClick)
+        viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+        viewModel.onAction(InventoryViewModel.Action.OnContextMenuDeleteClick)
 
         viewModel.onAction(InventoryViewModel.Action.OnDeleteCancelled)
 
-        val sheet = viewModel.stateFlow.value.editSheet
-        check(sheet != null)
-        assertEquals(false, sheet.showDeleteConfirmation)
+        assertNull(viewModel.stateFlow.value.deleteConfirmationItem)
+        assertEquals(emptyList(), inventoryRepository.removedIds)
     }
 
-    // OnItemClick no longer reaches editSheet -- see skinwatch-bhs.
-    @Ignore
     @Test
-    fun `OnDeleteConfirmed removes the item and closes the sheet`() = runTest(dispatcher) {
-        val viewModel = newViewModel()
-        val id = inventoryRepository.addItem(
-            marketHashName = "Item",
-            iconUrl = "https://example.com/icon.png",
-            quantity = 1,
-            purchasePrice = SAMPLE_PURCHASE_PRICE,
-        )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
-            .single()
-            .item
-        viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
-        viewModel.onAction(InventoryViewModel.Action.OnDeleteClick)
+    fun `OnDeleteConfirmed from the context menu's Delete removes the item without ever opening the edit sheet`() =
+        runTest(dispatcher) {
+            val viewModel = newViewModel()
+            val id = inventoryRepository.addItem(
+                marketHashName = "Item",
+                iconUrl = "https://example.com/icon.png",
+                quantity = 1,
+                purchasePrice = SAMPLE_PURCHASE_PRICE,
+            )
+            dispatcher.scheduler.runCurrent()
+            val item = viewModel.stateFlow.value.items
+                .single()
+                .item
+            viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
+            viewModel.onAction(InventoryViewModel.Action.OnContextMenuDeleteClick)
 
-        viewModel.onAction(InventoryViewModel.Action.OnDeleteConfirmed)
-        dispatcher.scheduler.runCurrent()
+            viewModel.onAction(InventoryViewModel.Action.OnDeleteConfirmed)
+            dispatcher.scheduler.runCurrent()
 
-        assertEquals(listOf(id), inventoryRepository.removedIds)
-        assertNull(viewModel.stateFlow.value.editSheet)
-    }
+            assertEquals(listOf(id), inventoryRepository.removedIds)
+            assertNull(viewModel.stateFlow.value.editSheet)
+            assertNull(viewModel.stateFlow.value.deleteConfirmationItem)
+        }
 }
