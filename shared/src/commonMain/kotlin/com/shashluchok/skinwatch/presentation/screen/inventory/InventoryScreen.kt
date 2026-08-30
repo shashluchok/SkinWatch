@@ -35,6 +35,8 @@ import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
+private const val ITEM_CARD_CONTENT_TYPE = "InventoryItemCard"
+
 @Composable
 internal fun InventoryScreen(
     modifier: Modifier = Modifier,
@@ -89,7 +91,14 @@ private fun InventoryScreen(
                     .testTag(InventoryScreen.Tag.LIST),
                 contentPadding = listContentPadding,
             ) {
-                items(items = state.items, key = { it.item.id }) { listItem ->
+                items(
+                    items = state.items,
+                    key = { it.item.id },
+                    contentType = { ITEM_CARD_CONTENT_TYPE },
+                ) { listItem ->
+                    val onItemClick = remember(listItem.item) {
+                        { onAction(InventoryViewModel.Action.OnItemClick(listItem.item)) }
+                    }
                     sharedElementKeyTransition.AnimatedVisibility(
                         visible = { openedKey -> listItem.item.id != openedKey },
                         enter = fadeIn(cardVisibilityAnimationSpec),
@@ -98,7 +107,7 @@ private fun InventoryScreen(
                     ) {
                         InventoryItemCard(
                             listItem = listItem,
-                            onClick = { onAction(InventoryViewModel.Action.OnItemClick(listItem.item)) },
+                            onClick = onItemClick,
                             animatedVisibilityScope = this@AnimatedVisibility,
                             modifier = Modifier.testTag(InventoryScreen.Tag.itemCard(listItem.item.id)),
                         )
