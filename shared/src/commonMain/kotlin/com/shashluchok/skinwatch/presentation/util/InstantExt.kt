@@ -5,9 +5,12 @@ import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
 
-/** "dd.MM.yyyy" in fixed UTC, not the device's local timezone. */
+internal val displayTimeZone: TimeZone
+    get() = runCatching { TimeZone.currentSystemDefault() }.getOrDefault(TimeZone.UTC)
+
+/** "dd.MM.yyyy" in the device's local timezone -- see [displayTimeZone]. */
 internal fun Instant.toFullDateLabel(): String {
-    val date = toLocalDateTime(TimeZone.UTC).date
+    val date = toLocalDateTime(displayTimeZone).date
     return "${date.day.pad2()}.${date.month.number.pad2()}.${date.year}"
 }
 

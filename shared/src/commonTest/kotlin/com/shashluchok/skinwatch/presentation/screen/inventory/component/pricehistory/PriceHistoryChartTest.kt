@@ -3,8 +3,8 @@ package com.shashluchok.skinwatch.presentation.screen.inventory.component.priceh
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
+import com.shashluchok.skinwatch.presentation.util.displayTimeZone
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -187,14 +187,14 @@ class PriceHistoryChartTest {
 
     @Test
     fun `toTimeLabel formats hour and minute as zero-padded 24h HH-mm`() {
-        val instant = LocalDateTime(2026, 1, 1, 19, 0).toInstant(TimeZone.UTC)
+        val instant = LocalDateTime(2026, 1, 1, 19, 0).toInstant(displayTimeZone)
 
         assertEquals(expected = "19:00", actual = instant.toTimeLabel())
     }
 
     @Test
     fun `toTimeLabel zero-pads single-digit hour and minute`() {
-        val instant = LocalDateTime(2026, 1, 1, 9, 5).toInstant(TimeZone.UTC)
+        val instant = LocalDateTime(2026, 1, 1, 9, 5).toInstant(displayTimeZone)
 
         assertEquals(expected = "09:05", actual = instant.toTimeLabel())
     }
@@ -208,7 +208,7 @@ class PriceHistoryChartTest {
 
     @Test
     fun `formatPriceHistoryTooltipTimestamp combines the full date and time`() {
-        val instant = LocalDateTime(2026, 1, 1, 19, 0).toInstant(TimeZone.UTC)
+        val instant = LocalDateTime(2026, 1, 1, 19, 0).toInstant(displayTimeZone)
 
         assertEquals(expected = "01.01.2026 19:00", actual = formatPriceHistoryTooltipTimestamp(instant))
     }

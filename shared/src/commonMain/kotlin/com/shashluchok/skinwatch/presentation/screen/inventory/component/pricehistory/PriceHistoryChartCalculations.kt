@@ -3,6 +3,7 @@ package com.shashluchok.skinwatch.presentation.screen.inventory.component.priceh
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
+import com.shashluchok.skinwatch.presentation.util.displayTimeZone
 import com.shashluchok.skinwatch.presentation.util.pad2
 import com.shashluchok.skinwatch.presentation.util.toFullDateLabel
 import kotlinx.datetime.TimeZone
@@ -140,13 +141,8 @@ internal fun Instant.toAxisDateLabel(): String {
     return "${date.day.pad2()}.${date.month.number.pad2()}"
 }
 
-/**
- * "HH:mm", fixed UTC -- same rationale as [toAxisDateLabel]. The X axis itself only shows the date
- * (see `priceHistoryBottomAxis`); this is used alongside `toFullDateLabel` in the tap tooltip,
- * where the exact time is worth the extra line.
- */
 internal fun Instant.toTimeLabel(): String {
-    val time = toLocalDateTime(TimeZone.UTC)
+    val time = toLocalDateTime(displayTimeZone)
     return "${time.hour.pad2()}:${time.minute.pad2()}"
 }
 

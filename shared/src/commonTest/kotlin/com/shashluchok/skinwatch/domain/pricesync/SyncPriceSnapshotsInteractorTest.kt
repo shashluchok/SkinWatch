@@ -179,4 +179,46 @@ class SyncPriceSnapshotsInteractorTest {
         assertTrue(!interactor.isSyncing.value)
         firstRun.join()
     }
+
+    @Test
+    fun `three duplicate items all see every snapshot across three sequential sync runs`() = runTest {
+        val hashName = "AK-47 | Redline (Field-Tested)"
+        repeat(3) {
+            inventoryRepository.addItem(
+                marketHashName = hashName,
+                iconUrl = "https://example.com/icon.png",
+                quantity = 1,
+                purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+            )
+        }
+        val interactor = newInteractor()
+
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(
+                lowestPrice = Money(minorUnits = 1000, currency = SteamCurrency.USD),
+                medianPrice = null,
+                volume = null,
+            ),
+        )
+        interactor.invoke()
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(
+                lowestPrice = Money(minorUnits = 1100, currency = SteamCurrency.USD),
+                medianPrice = null,
+                volume = null,
+            ),
+        )
+        interactor.invoke()
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(
+                lowestPrice = Money(minorUnits = 1200, currency = SteamCurrency.USD),
+                medianPrice = null,
+                volume = null,
+            ),
+        )
+        interactor.invoke()
+
+        assertEquals(3, priceSnapshotRepository.recorded.size)
+        assertEquals(3, priceSyncStatusRepository.markCompletedCalls.size)
+    }
 }
