@@ -35,7 +35,6 @@ import com.shashluchok.skinwatch.presentation.component.SharedElementKey
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
-import com.shashluchok.skinwatch.presentation.theme.LocalSemanticColors
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__market_price_label
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__no_price_data
@@ -170,17 +169,12 @@ private fun PriceHistoryGlyph(
     listItem: InventoryListItem,
     modifier: Modifier = Modifier,
 ) {
-    val semanticColors = LocalSemanticColors.current
-    val neutralColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val strokeColor = priceHistoryGlyphColor(
+    val trend = priceTrend(
         latestSnapshot = listItem.latestSnapshot,
         purchasePrice = listItem.item.purchasePrice,
-        positive = semanticColors.positive,
-        negative = semanticColors.negative,
-        neutral = neutralColor,
     )
     PriceTrendGlyph(
-        color = strokeColor,
+        trend = trend,
         modifier = modifier.testTag(InventoryItemCard.Tag.PRICE_HISTORY_GLYPH),
     )
 }
@@ -191,13 +185,10 @@ internal fun priceHistoryGlyphColor(
     positive: Color,
     negative: Color,
     neutral: Color,
-): Color {
-    val lowestPrice = latestSnapshot?.lowestPrice ?: return neutral
-    return when {
-        lowestPrice.minorUnits > purchasePrice.minorUnits -> positive
-        lowestPrice.minorUnits < purchasePrice.minorUnits -> negative
-        else -> neutral
-    }
+): Color = when (priceTrend(latestSnapshot = latestSnapshot, purchasePrice = purchasePrice)) {
+    PriceTrend.UP -> positive
+    PriceTrend.DOWN -> negative
+    PriceTrend.NEUTRAL -> neutral
 }
 
 /**

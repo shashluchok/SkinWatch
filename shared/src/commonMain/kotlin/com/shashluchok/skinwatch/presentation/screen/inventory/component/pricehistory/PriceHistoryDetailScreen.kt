@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
@@ -56,6 +57,7 @@ import com.shashluchok.skinwatch.presentation.component.SharedElementKey
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalAnimatedVisibilityScope
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewModel
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.PriceTrend
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.PriceTrendGlyph
 import com.shashluchok.skinwatch.presentation.theme.AppFontFamilies
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
@@ -301,8 +303,10 @@ private fun EmptyPriceHistory() {
 
 @Composable
 private fun EmptyStateGlyph(modifier: Modifier = Modifier) {
-    val strokeColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = EMPTY_STATE_GLYPH_ALPHA)
-    PriceTrendGlyph(color = strokeColor, modifier = modifier)
+    PriceTrendGlyph(
+        trend = PriceTrend.NEUTRAL,
+        modifier = modifier.alpha(EMPTY_STATE_GLYPH_ALPHA),
+    )
 }
 
 @Composable
