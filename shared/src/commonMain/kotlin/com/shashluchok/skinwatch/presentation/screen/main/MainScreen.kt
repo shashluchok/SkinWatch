@@ -5,22 +5,29 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -29,16 +36,17 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.shashluchok.skinwatch.presentation.component.AnimatedFadeText
+import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalHostContent
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.navigation.config.navigationConfig
 import com.shashluchok.skinwatch.presentation.navigation.destination.Inventory
-import com.shashluchok.skinwatch.presentation.navigation.navtab.GlowIcon
 import com.shashluchok.skinwatch.presentation.navigation.navtab.NavTab
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryScreen
 import com.shashluchok.skinwatch.presentation.screen.main.component.AddFab
 import com.shashluchok.skinwatch.presentation.screen.main.component.AddItemBottomSheetContent
+import com.shashluchok.skinwatch.presentation.screen.main.component.MainNavigationBar
 import com.shashluchok.skinwatch.presentation.screen.settings.SettingsScreen
 import com.shashluchok.skinwatch.presentation.screen.watchlist.WatchlistScreen
 import dev.chrisbanes.haze.hazeSource
@@ -46,8 +54,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private const val NAV_BAR_ITEM_INDICATOR_ALPHA = 0.16f
-private val enabledNavTabs = NavTab.entries.filter { it.isEnabled }
+internal val enabledNavTabs = NavTab.entries.filter { it.isEnabled }
 
 @Composable
 internal fun MainScreen(
@@ -82,6 +89,10 @@ private fun MainScreen(
 
     ProvideMainScreenAmbients {
         val hazeState = rememberHazeState()
+        val navBarHazeState = rememberHazeState()
+        val density = LocalDensity.current
+        val layoutDirection = LocalLayoutDirection.current
+        var navBarHeight by remember { mutableStateOf(0.dp) }
         val currentTab = enabledNavTabs.first { it.destination == backStack.lastOrNull() }
 
         Scaffold(
@@ -92,7 +103,15 @@ private fun MainScreen(
                     title = { AnimatedFadeText(text = stringResource(currentTab.labelRes)) },
                 )
             },
-            bottomBar = { MainNavigationBar(backStack = backStack) },
+            bottomBar = {
+                MainNavigationBar(
+                    backStack = backStack,
+                    hazeState = navBarHazeState,
+                    modifier = Modifier.onGloballyPositioned {
+                        navBarHeight = with(density) { it.size.height.toDp() }
+                    },
+                )
+            },
             floatingActionButton = {
                 MainFab(
                     visible = currentTab == NavTab.INVENTORY,
@@ -100,14 +119,24 @@ private fun MainScreen(
                 )
             },
         ) { contentPadding ->
-            HorizontalPager(
-                state = pagerState,
-                userScrollEnabled = false,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-            ) { page ->
-                enabledNavTabs[page].ScreenContent(modifier = Modifier.fillMaxSize())
+
+            val pagerPadding = PaddingValues(
+                start = contentPadding.calculateStartPadding(layoutDirection),
+                top = contentPadding.calculateTopPadding(),
+                end = contentPadding.calculateEndPadding(layoutDirection),
+            )
+
+            CompositionLocalProvider(LocalBottomBarInset provides navBarHeight) {
+                HorizontalPager(
+                    state = pagerState,
+                    userScrollEnabled = false,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(navBarHazeState)
+                        .padding(pagerPadding),
+                ) { page ->
+                    enabledNavTabs[page].ScreenContent(modifier = Modifier.fillMaxSize())
+                }
             }
         }
 
@@ -141,37 +170,6 @@ private fun RegisterAddSheet(
             },
         ),
     )
-}
-
-@Composable
-private fun MainNavigationBar(backStack: NavBackStack<NavKey>) {
-    NavigationBar(
-        modifier = Modifier.testTag(MainScreen.Tag.NAV_BAR),
-    ) {
-        enabledNavTabs.forEach { tab ->
-            val isSelected = backStack.lastOrNull() == tab.destination
-
-            NavigationBarItem(
-                modifier = Modifier.testTag(MainScreen.Tag.navBarItem(tab)),
-                selected = isSelected,
-                onClick = {
-                    if (!isSelected) {
-                        backStack.clear()
-                        backStack.add(tab.destination)
-                    }
-                },
-                icon = { tab.GlowIcon(isSelected = isSelected) },
-                label = { Text(text = stringResource(tab.labelRes)) },
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.primary.copy(
-                        alpha = NAV_BAR_ITEM_INDICATOR_ALPHA,
-                    ),
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                ),
-            )
-        }
-    }
 }
 
 @Composable

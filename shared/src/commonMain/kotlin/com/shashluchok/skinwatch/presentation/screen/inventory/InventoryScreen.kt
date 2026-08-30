@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementKeyTransition
@@ -28,6 +29,7 @@ import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncSta
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryDetailScreen
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
+import com.shashluchok.skinwatch.presentation.util.plusBottom
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
 import org.jetbrains.compose.resources.stringResource
@@ -71,11 +73,13 @@ private fun InventoryScreen(
             }
         },
     ) { contentPadding ->
+        val listContentPadding = contentPadding.plusBottom(LocalBottomBarInset.current)
+
         if (state.items.isEmpty()) {
             EmptyState(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(contentPadding),
+                    .padding(listContentPadding),
             )
         } else {
             LazyColumn(
@@ -83,7 +87,7 @@ private fun InventoryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .testTag(InventoryScreen.Tag.LIST),
-                contentPadding = contentPadding,
+                contentPadding = listContentPadding,
             ) {
                 items(items = state.items, key = { it.item.id }) { listItem ->
                     sharedElementKeyTransition.AnimatedVisibility(
