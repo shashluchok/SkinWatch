@@ -8,7 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import coil3.compose.AsyncImage
@@ -37,6 +36,7 @@ import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.SharedElementKey
+import com.shashluchok.skinwatch.presentation.component.SingleLineFadeText
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
@@ -143,20 +143,21 @@ private fun InventoryItemCardRow(
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = boundsTransform,
                     ).clip(RoundedCornerShape(dimens.radius.small))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .testTag(InventoryItemCard.Tag.ICON),
-                contentScale = ContentScale.Crop,
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    modifier = Modifier.sharedElement(
-                        sharedContentState = rememberSharedContentState(
-                            key = SharedElementKey.Title(itemId = listItem.item.id),
+                SingleLineFadeText(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState(
+                                key = SharedElementKey.Title(itemId = listItem.item.id),
+                            ),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = boundsTransform,
                         ),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = boundsTransform,
-                    ),
                     text = listItem.item.marketHashName,
+                    fadeColor = CardDefaults.cardColors().containerColor,
                     style = MaterialTheme.typography.titleMedium,
                 )
                 InventoryItemCardPrices(listItem = listItem)

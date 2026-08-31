@@ -101,7 +101,6 @@ internal fun PriceHistoryChart(
     purchasePrice: Money?,
     modifier: Modifier = Modifier,
 ) {
-    val dimens = LocalDimens.current
     val modelProducer = remember { CartesianChartModelProducer() }
 
     LaunchedEffect(snapshots) {
@@ -154,12 +153,6 @@ internal fun PriceHistoryChart(
             axisTitle = axisTitle,
             currency = currency,
         )
-        if (purchasePrice != null) {
-            PurchasePriceLegend(
-                modifier = Modifier.padding(top = dimens.padding.small),
-                purchasePrice = purchasePrice,
-            )
-        }
     }
 }
 

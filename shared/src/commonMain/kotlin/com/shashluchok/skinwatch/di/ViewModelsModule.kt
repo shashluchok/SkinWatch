@@ -2,6 +2,7 @@ package com.shashluchok.skinwatch.di
 
 import com.shashluchok.skinwatch.presentation.navigation.AppViewModel
 import com.shashluchok.skinwatch.presentation.screen.inventory.InventoryViewModel
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryDetailViewModel
 import com.shashluchok.skinwatch.presentation.screen.main.MainViewModel
 import com.shashluchok.skinwatch.presentation.screen.settings.SettingsViewModel
 import com.shashluchok.skinwatch.presentation.screen.settings.component.DebugPanelViewModel
@@ -33,9 +34,13 @@ internal val viewModelModule = module {
             observeInventoryList = get(),
             updateInventoryItem = get(),
             removeInventoryItem = get(),
-            observePriceHistory = get(),
             syncPriceSnapshots = get(),
             observeLastSyncedAt = get(),
+        )
+    }
+    viewModel {
+        PriceHistoryDetailViewModel(
+            observePriceHistory = get(),
         )
     }
     viewModel { WatchlistViewModel() }

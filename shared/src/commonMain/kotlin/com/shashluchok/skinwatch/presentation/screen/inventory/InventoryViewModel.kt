@@ -6,14 +6,11 @@ import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
 import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
-import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -24,7 +21,6 @@ internal class InventoryViewModel(
     private val observeInventoryList: ObserveInventoryListInteractor,
     private val updateInventoryItem: UpdateInventoryItemInteractor,
     private val removeInventoryItem: RemoveInventoryItemInteractor,
-    private val observePriceHistory: ObservePriceHistoryInteractor,
     private val syncPriceSnapshots: SyncPriceSnapshotsInteractor,
     private val observeLastSyncedAt: ObserveLastSyncedAtInteractor,
 ) : BaseViewModel<InventoryViewModel.State, InventoryViewModel.Action>() {
@@ -33,7 +29,7 @@ internal class InventoryViewModel(
         val editSheet: EditSheetState? = null,
         val contextMenuItem: InventoryItem? = null,
         val deleteConfirmationItem: InventoryItem? = null,
-        val priceHistoryDetailAlert: PriceHistoryDetailState? = null,
+        val priceHistoryDetailAlertItem: InventoryItem? = null,
         val lastSyncedAt: Instant? = null,
         val isSyncing: Boolean = false,
     )
@@ -43,12 +39,6 @@ internal class InventoryViewModel(
         val quantity: String,
         val purchasePrice: String,
         val validationError: ValidationError? = null,
-    )
-
-    data class PriceHistoryDetailState(
-        val item: InventoryItem,
-        val snapshots: List<PriceSnapshot> = emptyList(),
-        val isLoading: Boolean = true,
     )
 
     sealed interface Action {
@@ -88,8 +78,6 @@ internal class InventoryViewModel(
     }
 
     override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
-
-    private var priceHistoryJob: Job? = null
 
     init {
         subscribeToInventoryList()
@@ -132,23 +120,11 @@ internal class InventoryViewModel(
     }
 
     private fun onItemClick(item: InventoryItem) {
-        state = state.copy(priceHistoryDetailAlert = PriceHistoryDetailState(item = item))
-        priceHistoryJob?.cancel()
-        priceHistoryJob = observePriceHistory(item.marketHashName)
-            .onEach { snapshots ->
-                state = state.copy(
-                    priceHistoryDetailAlert = state.priceHistoryDetailAlert?.copy(
-                        snapshots = snapshots,
-                        isLoading = false,
-                    ),
-                )
-            }.launchIn(viewModelScope)
+        state = state.copy(priceHistoryDetailAlertItem = item)
     }
 
     private fun onDismissPriceHistoryDetail() {
-        priceHistoryJob?.cancel()
-        priceHistoryJob = null
-        state = state.copy(priceHistoryDetailAlert = null)
+        state = state.copy(priceHistoryDetailAlertItem = null)
     }
 
     private fun onItemLongClick(item: InventoryItem) {

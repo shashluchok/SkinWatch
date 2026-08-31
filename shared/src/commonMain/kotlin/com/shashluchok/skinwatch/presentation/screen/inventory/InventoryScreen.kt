@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.domain.inventory.InventoryItem
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
 import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
@@ -119,9 +120,9 @@ private fun InventoryScreen(
     if (state.deleteConfirmationItem != null) {
         RegisterDeleteConfirmation(onAction = onAction)
     }
-    state.priceHistoryDetailAlert?.let { detail ->
+    state.priceHistoryDetailAlertItem?.let { item ->
         RegisterPriceHistoryDetailAlert(
-            detail = detail,
+            item = item,
             onDismissRequest = { onAction(InventoryViewModel.Action.OnDismissPriceHistoryDetail) },
         )
     }
@@ -211,16 +212,16 @@ private fun RegisterDeleteConfirmation(onAction: (InventoryViewModel.Action) -> 
 
 @Composable
 private fun RegisterPriceHistoryDetailAlert(
-    detail: InventoryViewModel.PriceHistoryDetailState,
+    item: InventoryItem,
     onDismissRequest: () -> Unit,
 ) {
     LocalModalHost.current.Show(
         ModalRequest(
-            appearance = ModalRequest.Appearance.Alert(key = detail.item.id),
+            appearance = ModalRequest.Appearance.Alert(key = item.id),
             onDismissRequest = onDismissRequest,
             content = {
                 PriceHistoryDetailScreen(
-                    detail = detail,
+                    item = item,
                     onBackClick = onDismissRequest,
                 )
             },

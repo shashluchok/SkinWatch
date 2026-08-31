@@ -125,9 +125,9 @@ class InventoryViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertNull(viewModel.stateFlow.value.editSheet)
-        val sheet = viewModel.stateFlow.value.priceHistoryDetailAlert
+        val sheet = viewModel.stateFlow.value.priceHistoryDetailAlertItem
         check(sheet != null)
-        assertEquals(id, sheet.item.id)
+        assertEquals(id, item.id)
     }
 
     @Test
@@ -153,7 +153,7 @@ class InventoryViewModelTest {
         )
         dispatcher.scheduler.runCurrent()
 
-        val snapshots = viewModel.stateFlow.value.priceHistoryDetailAlert
+        val snapshots = viewModel.stateFlow.value.priceHistoryDetailAlertItem
             ?.snapshots
         assertEquals(1, snapshots?.size)
         assertEquals(Money(minorUnits = 5000, currency = SteamCurrency.USD), snapshots?.single()?.lowestPrice)
@@ -184,7 +184,7 @@ class InventoryViewModelTest {
         )
         dispatcher.scheduler.runCurrent()
 
-        assertNull(viewModel.stateFlow.value.priceHistoryDetailAlert)
+        assertNull(viewModel.stateFlow.value.priceHistoryDetailAlertItem)
     }
 
     @Test
@@ -222,7 +222,7 @@ class InventoryViewModelTest {
             )
             dispatcher.scheduler.runCurrent()
 
-            val sheet = viewModel.stateFlow.value.priceHistoryDetailAlert
+            val sheet = viewModel.stateFlow.value.priceHistoryDetailAlertItem
             check(sheet != null)
             assertEquals(secondItem.id, sheet.item.id)
             assertEquals(emptyList(), sheet.snapshots)
