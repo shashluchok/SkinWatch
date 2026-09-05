@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.domain.inventory.InventoryItem
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
@@ -45,6 +47,7 @@ import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.Instant
 
 private const val ITEM_CARD_CONTENT_TYPE = "InventoryItemCard"
 private const val SKELETON_CARD_COUNT = 5
@@ -71,13 +74,12 @@ private fun InventoryScreen(
     Scaffold(
         modifier = modifier.testTag(InventoryScreen.Tag.ROOT),
         topBar = {
-            if (state.content is InventoryViewModel.State.Content.Items) {
-                SyncStatusBar(
-                    lastSyncedAt = state.lastSyncedAt,
-                    isSyncing = state.isSyncing,
-                    onSyncClick = { onAction(InventoryViewModel.Action.OnSyncNowClick) },
-                )
-            }
+            InventorySyncStatusBar(
+                isVisible = state.content is InventoryViewModel.State.Content.Items,
+                lastSyncedAt = state.lastSyncedAt,
+                isSyncing = state.isSyncing,
+                onSyncClick = { onAction(InventoryViewModel.Action.OnSyncNowClick) },
+            )
         },
     ) { contentPadding ->
         InventoryContent(
@@ -98,6 +100,35 @@ private fun InventoryScreen(
         RegisterPriceHistoryDetailAlert(
             item = item,
             onDismissRequest = { onAction(InventoryViewModel.Action.OnDismissPriceHistoryDetail) },
+        )
+    }
+}
+
+@Composable
+private fun InventorySyncStatusBar(
+    isVisible: Boolean,
+    lastSyncedAt: Instant?,
+    isSyncing: Boolean,
+    onSyncClick: () -> Unit,
+) {
+    val motion = LocalMotion.current
+
+    val expandSpec = remember(motion) {
+        tween<IntSize>(
+            durationMillis = motion.duration.deliberate,
+            delayMillis = motion.duration.deliberate,
+            easing = motion.easing.standard,
+        )
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = expandVertically(expandSpec),
+    ) {
+        SyncStatusBar(
+            lastSyncedAt = lastSyncedAt,
+            isSyncing = isSyncing,
+            onSyncClick = onSyncClick,
         )
     }
 }
