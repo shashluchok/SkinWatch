@@ -2,6 +2,7 @@ package com.shashluchok.skinwatch.presentation.screen.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -11,12 +12,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyChangeConfirmationDialog
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.settings.component.DebugPanel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
+import com.shashluchok.skinwatch.presentation.util.plusBottom
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_auto_option
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_row__title
@@ -45,8 +48,11 @@ private fun SettingsScreen(
 ) {
     val dimens = LocalDimens.current
 
-    Scaffold(modifier = modifier.testTag(SettingsScreen.Tag.ROOT)) { contentPadding ->
-        Column(modifier = Modifier.padding(contentPadding)) {
+    Scaffold(
+        modifier = modifier.testTag(SettingsScreen.Tag.ROOT),
+        contentWindowInsets = WindowInsets(0),
+    ) { contentPadding ->
+        Column(modifier = Modifier.padding(contentPadding.plusBottom(LocalBottomBarInset.current))) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
