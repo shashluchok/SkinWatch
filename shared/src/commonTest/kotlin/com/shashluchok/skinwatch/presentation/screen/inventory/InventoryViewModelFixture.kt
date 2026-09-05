@@ -5,7 +5,6 @@ import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
-import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
 import com.shashluchok.skinwatch.domain.pricesync.FakePriceSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
@@ -46,7 +45,6 @@ internal class InventoryViewModelFixture {
         ),
         updateInventoryItem = UpdateInventoryItemInteractor(inventoryRepository = inventoryRepository),
         removeInventoryItem = RemoveInventoryItemInteractor(inventoryRepository = inventoryRepository),
-        observePriceHistory = ObservePriceHistoryInteractor(priceSnapshotRepository = priceSnapshotRepository),
         syncPriceSnapshots = syncPriceSnapshots,
         observeLastSyncedAt = ObserveLastSyncedAtInteractor(priceSyncStatusRepository = priceSyncStatusRepository),
     )

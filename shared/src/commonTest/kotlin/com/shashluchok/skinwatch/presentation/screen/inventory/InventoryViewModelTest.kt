@@ -1,5 +1,6 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory
 
+import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.presentation.component.ValidationError
@@ -37,6 +38,11 @@ class InventoryViewModelTest {
 
     private fun newViewModel() = fixture.newViewModel()
 
+    private fun InventoryViewModel.loadedItems(): List<InventoryListItem> {
+        dispatcher.scheduler.runCurrent()
+        return stateFlow.value.items
+    }
+
     @Test
     fun `state items reflects an added inventory item with no snapshot yet`() = runTest(dispatcher) {
         val viewModel = newViewModel()
@@ -47,10 +53,10 @@ class InventoryViewModelTest {
             purchasePrice = Money(minorUnits = 1234, currency = SteamCurrency.USD),
         )
 
-        dispatcher.scheduler.runCurrent()
-
-        val listItem = viewModel.stateFlow.value.items
+        val listItem = viewModel
+            .loadedItems()
             .single()
+
         assertEquals("AK-47 | Redline (Field-Tested)", listItem.item.marketHashName)
         assertNull(listItem.latestSnapshot)
     }
@@ -76,11 +82,11 @@ class InventoryViewModelTest {
             capturedAt = Instant.fromEpochMilliseconds(2_000),
         )
 
-        dispatcher.scheduler.runCurrent()
-
-        val latest = viewModel.stateFlow.value.items
+        val latest = viewModel
+            .loadedItems()
             .single()
             .latestSnapshot
+
         assertEquals(Money(minorUnits = 5500, currency = SteamCurrency.USD), latest?.lowestPrice)
     }
 
@@ -101,9 +107,7 @@ class InventoryViewModelTest {
             purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
 
-        dispatcher.scheduler.runCurrent()
-
-        assertEquals(2, viewModel.stateFlow.value.items.size)
+        assertEquals(2, viewModel.loadedItems().size)
         assertEquals(1, priceSnapshotRepository.observeCallCounts[hashName])
     }
 
@@ -116,8 +120,8 @@ class InventoryViewModelTest {
             quantity = 3,
             purchasePrice = Money(minorUnits = 2500, currency = SteamCurrency.USD),
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
 
@@ -131,102 +135,61 @@ class InventoryViewModelTest {
     }
 
     @Test
-    fun `OnItemClick subscribes to the item's price history and reflects emitted snapshots`() = runTest(dispatcher) {
+    fun `OnDismissPriceHistoryDetail closes the detail`() = runTest(dispatcher) {
         val viewModel = newViewModel()
-        val hashName = "AWP | Asiimov (Field-Tested)"
         inventoryRepository.addItem(
-            marketHashName = hashName,
+            marketHashName = "P250 | Sand Dune",
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
             purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
-            .single()
-            .item
-
-        viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
-        priceSnapshotRepository.emitSnapshot(
-            marketHashName = hashName,
-            lowestPrice = Money(minorUnits = 5000, currency = SteamCurrency.USD),
-            capturedAt = Instant.fromEpochMilliseconds(1_000),
-        )
-        dispatcher.scheduler.runCurrent()
-
-        val snapshots = viewModel.stateFlow.value.priceHistoryDetailAlertItem
-            ?.snapshots
-        assertEquals(1, snapshots?.size)
-        assertEquals(Money(minorUnits = 5000, currency = SteamCurrency.USD), snapshots?.single()?.lowestPrice)
-    }
-
-    @Test
-    fun `OnDismissPriceHistoryDetail closes the detail and stops reflecting new snapshots`() = runTest(dispatcher) {
-        val viewModel = newViewModel()
-        val hashName = "P250 | Sand Dune"
-        inventoryRepository.addItem(
-            marketHashName = hashName,
-            iconUrl = "https://example.com/icon.png",
-            quantity = 1,
-            purchasePrice = SAMPLE_PURCHASE_PRICE,
-        )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
         viewModel.onAction(InventoryViewModel.Action.OnItemClick(item))
         dispatcher.scheduler.runCurrent()
 
         viewModel.onAction(InventoryViewModel.Action.OnDismissPriceHistoryDetail)
-        priceSnapshotRepository.emitSnapshot(
-            marketHashName = hashName,
-            lowestPrice = Money(minorUnits = 7000, currency = SteamCurrency.USD),
-            capturedAt = Instant.fromEpochMilliseconds(2_000),
-        )
         dispatcher.scheduler.runCurrent()
 
         assertNull(viewModel.stateFlow.value.priceHistoryDetailAlertItem)
     }
 
     @Test
-    fun `OnItemClick for a different item while the detail is open cancels the previous subscription`() =
-        runTest(dispatcher) {
-            val viewModel = newViewModel()
-            val firstHashName = "P250 | Sand Dune"
-            val secondHashName = "M4A4 | Howl (Field-Tested)"
-            inventoryRepository.addItem(
-                marketHashName = firstHashName,
-                iconUrl = "https://example.com/icon.png",
-                quantity = 1,
-                purchasePrice = SAMPLE_PURCHASE_PRICE,
-            )
-            inventoryRepository.addItem(
-                marketHashName = secondHashName,
-                iconUrl = "https://example.com/icon.png",
-                quantity = 1,
-                purchasePrice = SAMPLE_PURCHASE_PRICE,
-            )
-            dispatcher.scheduler.runCurrent()
-            val items = viewModel.stateFlow.value.items
-                .map { it.item }
-            val firstItem = items.single { it.marketHashName == firstHashName }
-            val secondItem = items.single { it.marketHashName == secondHashName }
-            viewModel.onAction(InventoryViewModel.Action.OnItemClick(firstItem))
-            dispatcher.scheduler.runCurrent()
+    fun `OnItemClick for a different item while the detail is open retargets the detail`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        val firstHashName = "P250 | Sand Dune"
+        val secondHashName = "M4A4 | Howl (Field-Tested)"
+        inventoryRepository.addItem(
+            marketHashName = firstHashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
+        )
+        inventoryRepository.addItem(
+            marketHashName = secondHashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
+        )
+        val items = viewModel
+            .loadedItems()
+            .map { it.item }
+        val firstItem = items.single { it.marketHashName == firstHashName }
+        val secondItem = items.single { it.marketHashName == secondHashName }
+        viewModel.onAction(InventoryViewModel.Action.OnItemClick(firstItem))
+        dispatcher.scheduler.runCurrent()
 
-            viewModel.onAction(InventoryViewModel.Action.OnItemClick(secondItem))
-            dispatcher.scheduler.runCurrent()
-            priceSnapshotRepository.emitSnapshot(
-                marketHashName = firstHashName,
-                lowestPrice = Money(minorUnits = 4000, currency = SteamCurrency.USD),
-                capturedAt = Instant.fromEpochMilliseconds(3_000),
-            )
-            dispatcher.scheduler.runCurrent()
+        viewModel.onAction(InventoryViewModel.Action.OnItemClick(secondItem))
+        dispatcher.scheduler.runCurrent()
 
-            val sheet = viewModel.stateFlow.value.priceHistoryDetailAlertItem
-            check(sheet != null)
-            assertEquals(secondItem.id, sheet.item.id)
-            assertEquals(emptyList(), sheet.snapshots)
-        }
+        assertEquals(
+            secondItem.id,
+            viewModel.stateFlow.value.priceHistoryDetailAlertItem
+                ?.id,
+        )
+    }
 
     @Test
     fun `state reflects lastSyncedAt from the observer`() = runTest(dispatcher) {
@@ -278,8 +241,8 @@ class InventoryViewModelTest {
             quantity = 1,
             purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
 
@@ -297,8 +260,8 @@ class InventoryViewModelTest {
             quantity = 1,
             purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
         viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
@@ -317,8 +280,8 @@ class InventoryViewModelTest {
             quantity = 3,
             purchasePrice = Money(minorUnits = 2500, currency = SteamCurrency.USD),
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
         viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
@@ -344,8 +307,8 @@ class InventoryViewModelTest {
                 quantity = 1,
                 purchasePrice = SAMPLE_PURCHASE_PRICE,
             )
-            dispatcher.scheduler.runCurrent()
-            val item = viewModel.stateFlow.value.items
+            val item = viewModel
+                .loadedItems()
                 .single()
                 .item
             viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
@@ -367,8 +330,8 @@ class InventoryViewModelTest {
             quantity = 1,
             purchasePrice = Money(minorUnits = 100_000, currency = SteamCurrency.USD),
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
         viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
@@ -394,8 +357,8 @@ class InventoryViewModelTest {
             quantity = 1,
             purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
         viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
@@ -420,8 +383,8 @@ class InventoryViewModelTest {
             quantity = 1,
             purchasePrice = SAMPLE_PURCHASE_PRICE,
         )
-        dispatcher.scheduler.runCurrent()
-        val item = viewModel.stateFlow.value.items
+        val item = viewModel
+            .loadedItems()
             .single()
             .item
         viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
@@ -443,8 +406,8 @@ class InventoryViewModelTest {
                 quantity = 1,
                 purchasePrice = SAMPLE_PURCHASE_PRICE,
             )
-            dispatcher.scheduler.runCurrent()
-            val item = viewModel.stateFlow.value.items
+            val item = viewModel
+                .loadedItems()
                 .single()
                 .item
             viewModel.onAction(InventoryViewModel.Action.OnItemLongClick(item))
