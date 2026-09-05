@@ -11,11 +11,16 @@ import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlin.time.Instant
+
+internal const val MIN_LOADER_DURATION_MS = 1000L
 
 internal class InventoryViewModel(
     private val observeInventoryList: ObserveInventoryListInteractor,
@@ -25,14 +30,24 @@ internal class InventoryViewModel(
     private val observeLastSyncedAt: ObserveLastSyncedAtInteractor,
 ) : BaseViewModel<InventoryViewModel.State, InventoryViewModel.Action>() {
     data class State(
-        val items: List<InventoryListItem> = emptyList(),
+        val content: Content = Content.Loading,
         val editSheet: EditSheetState? = null,
         val contextMenuItem: InventoryItem? = null,
         val deleteConfirmationItem: InventoryItem? = null,
         val priceHistoryDetailAlertItem: InventoryItem? = null,
         val lastSyncedAt: Instant? = null,
         val isSyncing: Boolean = false,
-    )
+    ) {
+        sealed interface Content {
+            data object Loading : Content
+
+            data object Empty : Content
+
+            data class Items(
+                val items: List<InventoryListItem>,
+            ) : Content
+        }
+    }
 
     data class EditSheetState(
         val item: InventoryItem,
@@ -86,7 +101,21 @@ internal class InventoryViewModel(
     }
 
     private fun subscribeToInventoryList() {
-        observeInventoryList().onEach { items -> state = state.copy(items = items) }.launchIn(viewModelScope)
+        // The loader is held for a minimum stretch so a list that resolves in a few milliseconds
+        // does not flash a skeleton frame and vanish.
+        val minLoaderElapsed = flow {
+            emit(false)
+            delay(MIN_LOADER_DURATION_MS)
+            emit(true)
+        }
+        combine(observeInventoryList(), minLoaderElapsed) { items, isLoaderElapsed ->
+            when {
+                !isLoaderElapsed -> State.Content.Loading
+                items.isEmpty() -> State.Content.Empty
+                else -> State.Content.Items(items = items)
+            }
+        }.onEach { content -> state = state.copy(content = content) }
+            .launchIn(viewModelScope)
     }
 
     private fun subscribeToLastSyncedAt() {

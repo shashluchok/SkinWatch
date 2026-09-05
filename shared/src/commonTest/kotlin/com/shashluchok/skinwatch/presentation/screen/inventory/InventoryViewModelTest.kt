@@ -38,9 +38,68 @@ class InventoryViewModelTest {
 
     private fun newViewModel() = fixture.newViewModel()
 
+    /** Past the minimum loader duration the content is settled, so tests can read the rows directly. */
     private fun InventoryViewModel.loadedItems(): List<InventoryListItem> {
+        dispatcher.scheduler.advanceUntilIdle()
+        val content = stateFlow.value.content
+        check(content is InventoryViewModel.State.Content.Items)
+        return content.items
+    }
+
+    @Test
+    fun `content stays Loading until the minimum loader duration elapses`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        inventoryRepository.addItem(
+            marketHashName = "AK-47 | Redline (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = SAMPLE_PURCHASE_PRICE,
+        )
+
+        dispatcher.scheduler.advanceTimeBy(MIN_LOADER_DURATION_MS)
+
+        assertEquals(InventoryViewModel.State.Content.Loading, viewModel.stateFlow.value.content)
+    }
+
+    @Test
+    fun `content becomes Items once both the list and the minimum loader duration have resolved`() =
+        runTest(dispatcher) {
+            val viewModel = newViewModel()
+            inventoryRepository.addItem(
+                marketHashName = "AK-47 | Redline (Field-Tested)",
+                iconUrl = "https://example.com/icon.png",
+                quantity = 1,
+                purchasePrice = SAMPLE_PURCHASE_PRICE,
+            )
+
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val content = viewModel.stateFlow.value.content
+            check(content is InventoryViewModel.State.Content.Items)
+            assertEquals(
+                "AK-47 | Redline (Field-Tested)",
+                content.items
+                    .single()
+                    .item.marketHashName,
+            )
+        }
+
+    @Test
+    fun `content becomes Empty rather than Items when the inventory has no rows`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(InventoryViewModel.State.Content.Empty, viewModel.stateFlow.value.content)
+    }
+
+    @Test
+    fun `an empty inventory still shows the loader for the minimum duration first`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+
         dispatcher.scheduler.runCurrent()
-        return stateFlow.value.items
+
+        assertEquals(InventoryViewModel.State.Content.Loading, viewModel.stateFlow.value.content)
     }
 
     @Test

@@ -1,12 +1,16 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,6 +35,7 @@ import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalShare
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.DeleteConfirmationDialog
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCardSkeleton
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncStatusBar
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryDetailScreen
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
@@ -42,6 +47,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val ITEM_CARD_CONTENT_TYPE = "InventoryItemCard"
+private const val SKELETON_CARD_COUNT = 5
 
 @Composable
 internal fun InventoryScreen(
@@ -62,17 +68,10 @@ private fun InventoryScreen(
     onAction: (InventoryViewModel.Action) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sharedElementKeyTransition = LocalSharedElementKeyTransition.current
-    val listState = rememberLazyListState()
-    val motion = LocalMotion.current
-    val cardVisibilityAnimationSpec = remember(motion) {
-        tween<Float>(durationMillis = motion.duration.standard, easing = motion.easing.standard)
-    }
-
     Scaffold(
         modifier = modifier.testTag(InventoryScreen.Tag.ROOT),
         topBar = {
-            if (state.items.isNotEmpty()) {
+            if (state.content is InventoryViewModel.State.Content.Items) {
                 SyncStatusBar(
                     lastSyncedAt = state.lastSyncedAt,
                     isSyncing = state.isSyncing,
@@ -81,37 +80,12 @@ private fun InventoryScreen(
             }
         },
     ) { contentPadding ->
-        val listContentPadding = contentPadding.plusBottom(LocalBottomBarInset.current)
-
-        if (state.items.isEmpty()) {
-            EmptyState(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(listContentPadding),
-            )
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .testTag(InventoryScreen.Tag.LIST),
-                contentPadding = listContentPadding,
-            ) {
-                items(
-                    items = state.items,
-                    key = { it.item.id },
-                    contentType = { ITEM_CARD_CONTENT_TYPE },
-                ) { listItem ->
-                    InventoryScreenItem(
-                        listItem = listItem,
-                        isContextMenuExpanded = state.contextMenuItem?.id == listItem.item.id,
-                        sharedElementKeyTransition = sharedElementKeyTransition,
-                        cardVisibilityAnimationSpec = cardVisibilityAnimationSpec,
-                        onAction = onAction,
-                    )
-                }
-            }
-        }
+        InventoryContent(
+            content = state.content,
+            expandedContextMenuItemId = state.contextMenuItem?.id,
+            contentPadding = contentPadding.plusBottom(LocalBottomBarInset.current),
+            onAction = onAction,
+        )
     }
 
     state.editSheet?.let { sheet ->
@@ -125,6 +99,66 @@ private fun InventoryScreen(
             item = item,
             onDismissRequest = { onAction(InventoryViewModel.Action.OnDismissPriceHistoryDetail) },
         )
+    }
+}
+
+@Composable
+private fun InventoryContent(
+    content: InventoryViewModel.State.Content,
+    expandedContextMenuItemId: Long?,
+    contentPadding: PaddingValues,
+    onAction: (InventoryViewModel.Action) -> Unit,
+) {
+    val sharedElementKeyTransition = LocalSharedElementKeyTransition.current
+    val listState = rememberLazyListState()
+    val motion = LocalMotion.current
+    val cardVisibilityAnimationSpec = remember(motion) {
+        tween<Float>(durationMillis = motion.duration.standard, easing = motion.easing.standard)
+    }
+
+    AnimatedContent(
+        targetState = content,
+        transitionSpec = {
+            fadeIn(cardVisibilityAnimationSpec) togetherWith fadeOut(cardVisibilityAnimationSpec)
+        },
+        contentKey = { it::class },
+    ) { targetContent ->
+        when (targetContent) {
+            InventoryViewModel.State.Content.Loading -> SkeletonList(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag(InventoryScreen.Tag.SKELETON_LIST),
+                contentPadding = contentPadding,
+            )
+
+            InventoryViewModel.State.Content.Empty -> EmptyState(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
+            )
+
+            is InventoryViewModel.State.Content.Items -> LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag(InventoryScreen.Tag.LIST),
+                contentPadding = contentPadding,
+            ) {
+                items(
+                    items = targetContent.items,
+                    key = { it.item.id },
+                    contentType = { ITEM_CARD_CONTENT_TYPE },
+                ) { listItem ->
+                    InventoryScreenItem(
+                        listItem = listItem,
+                        isContextMenuExpanded = expandedContextMenuItemId == listItem.item.id,
+                        sharedElementKeyTransition = sharedElementKeyTransition,
+                        cardVisibilityAnimationSpec = cardVisibilityAnimationSpec,
+                        onAction = onAction,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -159,6 +193,18 @@ private fun LazyItemScope.InventoryScreenItem(
             animatedVisibilityScope = this@AnimatedVisibility,
             modifier = Modifier.testTag(InventoryScreen.Tag.itemCard(listItem.item.id)),
         )
+    }
+}
+
+@Composable
+private fun SkeletonList(
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(contentPadding)) {
+        repeat(SKELETON_CARD_COUNT) {
+            InventoryItemCardSkeleton()
+        }
     }
 }
 
@@ -234,6 +280,7 @@ internal object InventoryScreen {
         const val ROOT = "InventoryScreen"
         const val EMPTY_STATE = "$ROOT.emptyState"
         const val LIST = "$ROOT.list"
+        const val SKELETON_LIST = "$ROOT.skeletonList"
 
         fun itemCard(id: Long) = "$ROOT.itemCard.$id"
     }
