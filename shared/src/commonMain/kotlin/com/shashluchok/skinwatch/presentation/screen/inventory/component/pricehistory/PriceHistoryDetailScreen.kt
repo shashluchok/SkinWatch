@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -185,10 +187,18 @@ private fun Content(
         ) { snapshotsState ->
             when (snapshotsState) {
                 is PriceHistoryDetailViewModel.State.Content -> {
-                    PriceHistoryBody(
-                        pricedSnapshots = snapshotsState.snapshots,
-                        purchasePrice = item.purchasePrice,
-                    )
+                    // Scrollable, so the body is measured against an unbounded height. Beyond
+                    // letting tall content scroll on short screens, this is what keeps the chart at
+                    // its intrinsic height while the closing shared-bounds transition shrinks this
+                    // island toward the list card: measured against those collapsing bounds, the
+                    // chart's vertical axis ends up handing a negative height to its title's text
+                    // measurement, which throws.
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        PriceHistoryBody(
+                            pricedSnapshots = snapshotsState.snapshots,
+                            purchasePrice = item.purchasePrice,
+                        )
+                    }
                 }
                 PriceHistoryDetailViewModel.State.Loading -> {}
             }
