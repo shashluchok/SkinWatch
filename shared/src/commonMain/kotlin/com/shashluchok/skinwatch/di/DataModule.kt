@@ -111,8 +111,10 @@ internal val dataModule = module {
     single<ItemCatalogRepository> { ItemCatalogRepositoryImpl(dao = get()) }
     single<CatalogSyncStatusRepository> { CatalogSyncStatusRepositoryImpl(dao = get()) }
 
-    // Debug
+    // App-wide scope for background work that must outlive any single screen
     single { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+
+    // Debug
     single { get<AppDatabase>().debugSettingsDao() }
     single<DebugSettingsRepository> { DebugSettingsRepositoryImpl(dao = get(), scope = get()) }
 }

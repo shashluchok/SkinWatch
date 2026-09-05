@@ -18,6 +18,7 @@ import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -68,6 +69,7 @@ class AppViewModelTest {
                 catalogSyncStatusRepository = FakeCatalogSyncStatusRepository(),
             ),
         ),
+        appScope = CoroutineScope(dispatcher),
         observeDebugSettings = ObserveDebugSettingsInteractor(debugSettingsRepository = debugSettingsRepository),
     )
 

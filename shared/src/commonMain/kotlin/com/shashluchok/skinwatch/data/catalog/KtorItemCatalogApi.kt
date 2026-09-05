@@ -14,6 +14,8 @@ import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.io.IOException
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -35,18 +37,20 @@ internal class KtorItemCatalogApi(
     override suspend fun fetch(
         category: CatalogCategory,
         onChunk: suspend (List<CatalogItem>) -> Unit,
-    ): CatalogFetchResult<Unit> = runCatching {
-        httpClient.prepareGet("$BASE_URL/${category.fileName}.json").execute { response: HttpResponse ->
-            val source = response.bodyAsChannel().toJsonSource()
-            catalogJson
-                .decodeSourceToSequence<CatalogEntryDto>(source)
-                .chunked(CHUNK_SIZE)
-                .forEach { entries -> onChunk(entries.toCatalogItems(category)) }
-        }
-    }.fold(
-        onSuccess = { CatalogFetchResult.Success(Unit) },
-        onFailure = { CatalogFetchResult.Failure(it.toCatalogFetchError()) },
-    )
+    ): CatalogFetchResult<Unit> = withContext(Dispatchers.Default) {
+        runCatching {
+            httpClient.prepareGet("$BASE_URL/${category.fileName}.json").execute { response: HttpResponse ->
+                val source = response.bodyAsChannel().toJsonSource()
+                catalogJson
+                    .decodeSourceToSequence<CatalogEntryDto>(source)
+                    .chunked(CHUNK_SIZE)
+                    .forEach { entries -> onChunk(entries.toCatalogItems(category)) }
+            }
+        }.fold(
+            onSuccess = { CatalogFetchResult.Success(Unit) },
+            onFailure = { CatalogFetchResult.Failure(it.toCatalogFetchError()) },
+        )
+    }
 
     private fun List<CatalogEntryDto>.toCatalogItems(category: CatalogCategory): List<CatalogItem> =
         mapNotNull { entry ->

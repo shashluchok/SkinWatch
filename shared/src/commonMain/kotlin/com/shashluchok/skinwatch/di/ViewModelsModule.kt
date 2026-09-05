@@ -18,6 +18,7 @@ internal val viewModelModule = module {
             syncPriceSnapshotsIfStale = get(),
             catalogSyncScheduler = get(),
             syncCatalogItemsIfStale = get(),
+            appScope = get(),
             observeDebugSettings = get(),
         )
     }

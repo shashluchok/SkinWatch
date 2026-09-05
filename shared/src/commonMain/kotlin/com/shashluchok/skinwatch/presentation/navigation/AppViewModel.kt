@@ -7,6 +7,7 @@ import com.shashluchok.skinwatch.domain.debug.ObserveDebugSettingsInteractor
 import com.shashluchok.skinwatch.domain.pricesync.PriceSyncScheduler
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsIfStaleInteractor
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -17,6 +18,7 @@ internal class AppViewModel(
     syncPriceSnapshotsIfStale: SyncPriceSnapshotsIfStaleInteractor,
     catalogSyncScheduler: CatalogSyncScheduler,
     syncCatalogItemsIfStale: SyncCatalogItemsIfStaleInteractor,
+    appScope: CoroutineScope,
     private val observeDebugSettings: ObserveDebugSettingsInteractor,
 ) : BaseViewModel<AppViewModel.State, AppViewModel.Action>() {
     data class State(
@@ -32,8 +34,11 @@ internal class AppViewModel(
     init {
         priceSyncScheduler.schedulePeriodicSync()
         catalogSyncScheduler.schedulePeriodicSync()
-        viewModelScope.launch { syncPriceSnapshotsIfStale() }
-        viewModelScope.launch { syncCatalogItemsIfStale() }
+        // App-wide background syncs, not screen work -- they must outlive this ViewModel and stay
+        // off the Main dispatcher. Both interactors no-op on a concurrent run, so a ViewModel
+        // recreation cannot start a second sync.
+        appScope.launch { syncPriceSnapshotsIfStale() }
+        appScope.launch { syncCatalogItemsIfStale() }
         checkSplashScreenAvailability()
     }
 

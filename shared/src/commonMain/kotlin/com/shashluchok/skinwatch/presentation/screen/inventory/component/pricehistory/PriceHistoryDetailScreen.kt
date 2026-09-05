@@ -7,7 +7,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,9 +18,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -35,8 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,7 +55,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
 private const val EMPTY_STATE_GLYPH_ALPHA = 0.5f
 private const val CONTAINER_MAX_WIDTH_FRACTION = 0.9f
 private const val CONTAINER_MAX_HEIGHT_FRACTION = 0.8f
@@ -114,7 +108,7 @@ private fun PriceHistoryDetailScreen(
 ) {
     Container(
         modifier = modifier.fillMaxSize(),
-        itemId = item.id
+        itemId = item.id,
     ) {
         Content(
             item = item,
@@ -165,7 +159,7 @@ private fun Container(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = dimens.elevation.medium,
                 shadowElevation = dimens.elevation.large,
-                content = content
+                content = content,
             )
         }
     }
@@ -175,12 +169,11 @@ private fun Container(
 @Composable
 private fun Content(
     item: InventoryItem,
-    modifier: Modifier = Modifier,
     state: PriceHistoryDetailViewModel.State,
+    modifier: Modifier = Modifier,
 ) {
-
     Column(
-        modifier = modifier
+        modifier = modifier,
     ) {
         DetailHeader(
             item = item,
@@ -291,40 +284,6 @@ private fun EmptyStateGlyph(modifier: Modifier = Modifier) {
         trend = PriceTrend.NEUTRAL,
         modifier = modifier.alpha(EMPTY_STATE_GLYPH_ALPHA),
     )
-}
-
-
-/** Miniature preview of the chart's own dashed purchase-price line, same dash/gap pattern. */
-@Composable
-private fun DashSwatch(modifier: Modifier = Modifier) {
-    val dimens = LocalDimens.current
-    val color = MaterialTheme.colorScheme.outline
-    val strokeWidth = dimens.border.thin
-    Canvas(modifier = modifier) {
-        val y = size.height / 2f
-        drawLine(
-            color = color,
-            start = Offset(x = 0f, y = y),
-            end = Offset(x = size.width, y = y),
-            strokeWidth = strokeWidth.toPx(),
-            pathEffect = PathEffect.dashPathEffect(
-                intervals = floatArrayOf(
-                    dimens.padding.small.toPx(),
-                    dimens.padding.extraSmall.toPx(),
-                ),
-            ),
-        )
-    }
-}
-
-/**
- * Plain, locale-independent formatting (e.g. "49.00 USD"), same pattern as `InventoryItemCard`'s
- * private `formatMoney`. Both copies should eventually move to one shared multiplatform money
- * formatter -- not in scope for this task.
- */
-private fun formatMoney(money: Money): String {
-    val major = money.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT
-    return "$major ${money.currency.name}"
 }
 
 internal object PriceHistoryDetailScreen {
