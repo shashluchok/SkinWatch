@@ -5,6 +5,7 @@ import com.shashluchok.skinwatch.domain.catalog.SearchCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.FakeInventoryRepository
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesync.PriceSyncScheduler
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
@@ -35,6 +36,7 @@ internal class MainViewModelFixture {
             steamMarketRepository = steamMarketRepository,
             priceSnapshotRepository = priceSnapshotRepository,
             resolveDisplayCurrency = resolveDisplayCurrency,
+            priceSyncScheduler = PriceSyncScheduler.EMPTY,
         ),
     )
 }

@@ -2,8 +2,10 @@ package com.shashluchok.skinwatch.domain.inventory
 
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshotRepository
 import com.shashluchok.skinwatch.domain.pricesync.PRICE_SYNC_INTERVAL
+import com.shashluchok.skinwatch.domain.pricesync.PriceSyncScheduler
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
+import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
 import kotlinx.coroutines.flow.first
@@ -15,6 +17,7 @@ internal class AddInventoryItemInteractor(
     private val steamMarketRepository: SteamMarketRepository,
     private val priceSnapshotRepository: PriceSnapshotRepository,
     private val resolveDisplayCurrency: ResolveDisplayCurrencyInteractor,
+    private val priceSyncScheduler: PriceSyncScheduler,
 ) {
     suspend operator fun invoke(
         marketHashName: String,
@@ -34,15 +37,27 @@ internal class AddInventoryItemInteractor(
             purchasePrice = purchasePrice,
         )
         if (needsFreshPrice(marketHashName)) {
-            val overview = steamMarketRepository.getPriceOverview(marketHashName = marketHashName, currency = currency)
-            if (overview is SteamMarketResult.Success) {
-                priceSnapshotRepository.record(
-                    marketHashName = marketHashName,
-                    overview = overview.data,
-                    currency = currency,
-                    capturedAt = Clock.System.now(),
-                )
-            }
+            fetchInitialPrice(marketHashName = marketHashName, currency = currency)
+        }
+    }
+
+    /**
+     * A failure here leaves the item sitting in the list with no price at all, which is why it asks
+     * for a retry instead of waiting out [PRICE_SYNC_INTERVAL] like an ordinary stale price would.
+     */
+    private suspend fun fetchInitialPrice(marketHashName: String, currency: SteamCurrency) {
+        val overview = steamMarketRepository.getPriceOverview(marketHashName = marketHashName, currency = currency)
+        when (overview) {
+            is SteamMarketResult.Success -> priceSnapshotRepository.record(
+                marketHashName = marketHashName,
+                overview = overview.data,
+                currency = currency,
+                capturedAt = Clock.System.now(),
+            )
+
+            // Left without a price: ask for another attempt once there is a connection again,
+            // rather than leaving the item blank until the next scheduled run.
+            is SteamMarketResult.Failure -> priceSyncScheduler.scheduleRetrySync()
         }
     }
 

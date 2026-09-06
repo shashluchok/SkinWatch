@@ -37,11 +37,17 @@ internal val domainModule = module {
             steamMarketRepository = get(),
             priceSnapshotRepository = get(),
             resolveDisplayCurrency = get(),
+            priceSyncScheduler = get(),
         )
     }
     single { UpdateInventoryItemInteractor(inventoryRepository = get()) }
     single { RemoveInventoryItemInteractor(inventoryRepository = get()) }
-    single { ObserveInventoryListInteractor(inventoryRepository = get(), priceSnapshotRepository = get()) }
+    single {
+        ObserveInventoryListInteractor(
+            inventoryRepository = get(),
+            priceSnapshotRepository = get(),
+        )
+    }
     single { ObservePriceHistoryInteractor(priceSnapshotRepository = get()) }
 
     // Settings / currency
