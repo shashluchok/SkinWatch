@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.domain.inventory.InventoryItem
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
+import com.shashluchok.skinwatch.domain.inventory.InventoryStats
 import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
@@ -41,7 +43,7 @@ import com.shashluchok.skinwatch.presentation.screen.inventory.component.DeleteC
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCardSkeleton
-import com.shashluchok.skinwatch.presentation.screen.inventory.component.SyncStatusBar
+import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryStatsBar
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryDetailScreen
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
@@ -50,7 +52,6 @@ import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.time.Instant
 
 private const val ITEM_CARD_CONTENT_TYPE = "InventoryItemCard"
 private const val SKELETON_CARD_COUNT = 7
@@ -78,12 +79,7 @@ private fun InventoryScreen(
         modifier = modifier.testTag(InventoryScreen.Tag.ROOT),
         contentWindowInsets = WindowInsets(0),
         topBar = {
-            InventorySyncStatusBar(
-                isVisible = state.content is InventoryViewModel.State.Content.Items,
-                lastSyncedAt = state.lastSyncedAt,
-                isSyncing = state.isSyncing,
-                onSyncClick = { onAction(InventoryViewModel.Action.OnSyncNowClick) },
-            )
+            InventoryStatsBar(stats = (state.content as? InventoryViewModel.State.Content.Items)?.stats)
         },
     ) { contentPadding ->
         InventoryContent(
@@ -109,12 +105,7 @@ private fun InventoryScreen(
 }
 
 @Composable
-private fun InventorySyncStatusBar(
-    isVisible: Boolean,
-    lastSyncedAt: Instant?,
-    isSyncing: Boolean,
-    onSyncClick: () -> Unit,
-) {
+private fun InventoryStatsBar(stats: InventoryStats?) {
     val motion = LocalMotion.current
 
     val expandSpec = remember(motion) {
@@ -126,14 +117,12 @@ private fun InventorySyncStatusBar(
     }
 
     AnimatedVisibility(
-        visible = isVisible,
+        visible = stats != null,
         enter = expandVertically(expandSpec),
     ) {
-        SyncStatusBar(
-            lastSyncedAt = lastSyncedAt,
-            isSyncing = isSyncing,
-            onSyncClick = onSyncClick,
-        )
+        val lastStats = remember { mutableStateOf(stats) }
+        stats?.let { lastStats.value = it }
+        lastStats.value?.let { InventoryStatsBar(stats = it) }
     }
 }
 

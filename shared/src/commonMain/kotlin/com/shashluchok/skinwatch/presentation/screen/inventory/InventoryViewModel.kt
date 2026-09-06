@@ -3,6 +3,7 @@ package com.shashluchok.skinwatch.presentation.screen.inventory
 import androidx.lifecycle.viewModelScope
 import com.shashluchok.skinwatch.domain.inventory.InventoryItem
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
+import com.shashluchok.skinwatch.domain.inventory.InventoryStats
 import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
@@ -45,6 +46,7 @@ internal class InventoryViewModel(
 
             data class Items(
                 val items: List<InventoryListItem>,
+                val stats: InventoryStats,
             ) : Content
         }
     }
@@ -109,10 +111,14 @@ internal class InventoryViewModel(
             emit(true)
         }
         combine(observeInventoryList(), minLoaderElapsed) { items, isLoaderElapsed ->
-            when {
-                !isLoaderElapsed -> State.Content.Loading
-                items.isEmpty() -> State.Content.Empty
-                else -> State.Content.Items(items = items)
+            if (!isLoaderElapsed) {
+                State.Content.Loading
+            } else {
+                // Null exactly for an empty inventory, so this one call settles both remaining states.
+                InventoryStats
+                    .from(items)
+                    ?.let { stats -> State.Content.Items(items = items, stats = stats) }
+                    ?: State.Content.Empty
             }
         }.onEach { content -> state = state.copy(content = content) }
             .launchIn(viewModelScope)
