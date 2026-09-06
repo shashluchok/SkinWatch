@@ -87,7 +87,7 @@ class SyncPriceSnapshotsInteractorTest {
     }
 
     @Test
-    fun `marks the run completed even when some items failed`() = runTest {
+    fun `a run with any failure is not marked completed, so staleness still triggers a retry`() = runTest {
         inventoryRepository.addItem(
             marketHashName = "fails",
             iconUrl = "https://example.com/icon.png",
@@ -96,9 +96,59 @@ class SyncPriceSnapshotsInteractorTest {
         )
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
 
-        newInteractor().invoke()
+        val outcome = newInteractor().invoke()
 
+        assertEquals(PriceSyncOutcome.HadFailures, outcome)
+        assertEquals(0, priceSyncStatusRepository.markCompletedCalls.size)
+    }
+
+    @Test
+    fun `one failure among many is enough to withhold completion`() = runTest {
+        inventoryRepository.addItem(
+            marketHashName = "fails",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        inventoryRepository.addItem(
+            marketHashName = "succeeds",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        steamMarketRepository.priceOverviewResultsByHashName["fails"] =
+            SteamMarketResult.Failure(SteamMarketError.Network)
+        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        val outcome = newInteractor().invoke()
+
+        assertEquals(PriceSyncOutcome.HadFailures, outcome)
+        assertEquals(0, priceSyncStatusRepository.markCompletedCalls.size)
+    }
+
+    @Test
+    fun `a clean run reports completion and advances the last completed timestamp`() = runTest {
+        inventoryRepository.addItem(
+            marketHashName = "succeeds",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        val outcome = newInteractor().invoke()
+
+        assertEquals(PriceSyncOutcome.Completed, outcome)
         assertEquals(1, priceSyncStatusRepository.markCompletedCalls.size)
+    }
+
+    @Test
+    fun `an empty inventory reports Skipped rather than a completed run`() = runTest {
+        assertEquals(PriceSyncOutcome.Skipped, newInteractor().invoke())
     }
 
     @Test
