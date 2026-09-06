@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -51,7 +53,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Instant
 
 private const val ITEM_CARD_CONTENT_TYPE = "InventoryItemCard"
-private const val SKELETON_CARD_COUNT = 5
+private const val SKELETON_CARD_COUNT = 7
 
 @Composable
 internal fun InventoryScreen(
@@ -234,7 +236,11 @@ private fun SkeletonList(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(contentPadding)) {
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(contentPadding),
+    ) {
         repeat(SKELETON_CARD_COUNT) {
             InventoryItemCardSkeleton()
         }
