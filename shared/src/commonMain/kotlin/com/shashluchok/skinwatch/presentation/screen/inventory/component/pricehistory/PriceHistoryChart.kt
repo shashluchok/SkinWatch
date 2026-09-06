@@ -68,8 +68,13 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.time.Instant
 
+/**
+ * Shared by every state the modal can show -- chart, single reading, empty -- so the island is the
+ * same size whichever one applies and never resizes between them.
+ */
+internal val CHART_HEIGHT = 240.dp
+
 private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
-private const val CHART_HEIGHT_DP = 240
 private const val CHART_AREA_FILL_TOP_ALPHA_DARK = 0.28f
 private const val CHART_AREA_FILL_TOP_ALPHA_LIGHT = 0.16f
 private const val CHART_POINT_DIAMETER_DP = 4.5f
@@ -193,7 +198,7 @@ private fun PriceHistoryChartHost(
                     start = dimens.padding.small,
                     end = dimens.padding.medium,
                     bottom = dimens.padding.medium,
-                ).height(CHART_HEIGHT_DP.dp),
+                ).height(CHART_HEIGHT),
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(
                     lineProvider = priceHistoryLineProvider(purchasePriceValue = purchasePriceValue),

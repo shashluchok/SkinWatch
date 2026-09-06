@@ -26,7 +26,6 @@
     <string name="dev__screen_inventory__edit_sheet__title">Редактировать предмет</string>
     <string name="dev__screen_inventory__price_history_detail__title">История цены</string>
     <string name="dev__screen_inventory__price_history_detail__empty_state">Пока нет данных о цене</string>
-    <string name="dev__screen_inventory__price_history_detail__single_point_hint">История появится по мере накопления данных</string>
     <string name="dev__screen_inventory__price_history_detail__purchase_price_label">Цена покупки</string>
     <string name="dev__screen_inventory__price_history_detail__price_axis_label">Цена, %1$s</string>
     <string name="dev__screen_inventory__price_history_detail__back__content_description">Назад</string>
@@ -40,6 +39,9 @@
     <string name="dev__screen_inventory__item_form__price_error">Введите корректную положительную сумму</string>
     <string name="dev__screen_inventory__item_form__save_button">Сохранить</string>
     <string name="dev__screen_inventory__stats_bar__estimated__content_description">Часть предметов ещё без актуальной цены — они посчитаны по цене закупки</string>
+    <string name="dev__relative_time__just_now">только что</string>
+    <string name="dev__screen_inventory__price_history_detail__single_reading__updated">обновлено %1$s</string>
+    <string name="dev__screen_inventory__price_history_detail__single_reading__purchase_label">куплено за %1$s</string>
     <string name="dev__dialog_delete_item__title">Удалить предмет?</string>
     <string name="dev__dialog_delete_item__message">Действие необратимо</string>
     <string name="dev__dialog_delete_item__confirm_button">Удалить</string>

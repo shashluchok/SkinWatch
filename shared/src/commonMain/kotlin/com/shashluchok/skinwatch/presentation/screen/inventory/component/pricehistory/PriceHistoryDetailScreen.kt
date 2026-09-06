@@ -32,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -47,17 +46,12 @@ import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.SharedElementKey
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalAnimatedVisibilityScope
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
-import com.shashluchok.skinwatch.presentation.screen.inventory.component.PriceTrend
-import com.shashluchok.skinwatch.presentation.screen.inventory.component.PriceTrendGlyph
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
-import com.shashluchok.skinwatch.resources.Res
-import com.shashluchok.skinwatch.resources.dev__screen_inventory__price_history_detail__empty_state
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-private const val EMPTY_STATE_GLYPH_ALPHA = 0.5f
+private const val SINGLE_READING_COUNT = 1
 private const val CONTAINER_MAX_WIDTH_FRACTION = 0.9f
 private const val CONTAINER_MAX_HEIGHT_FRACTION = 0.8f
 
@@ -200,7 +194,9 @@ private fun Content(
                         )
                     }
                 }
-                PriceHistoryDetailViewModel.State.Loading -> {}
+                // Nothing at all: the history is a single Room read, so any placeholder would
+                // flash for a frame or two and read as a glitch.
+                PriceHistoryDetailViewModel.State.Loading -> Unit
             }
         }
     }
@@ -209,7 +205,13 @@ private fun Content(
 @Composable
 private fun PriceHistoryBody(pricedSnapshots: List<PriceSnapshot>, purchasePrice: Money?) {
     when {
-        pricedSnapshots.isEmpty() -> EmptyPriceHistory()
+        pricedSnapshots.isEmpty() -> PriceHistoryEmptyState()
+        // One point is not a trend -- see SinglePriceReading for why it is not plotted.
+        pricedSnapshots.size == SINGLE_READING_COUNT -> SinglePriceReading(
+            snapshot = pricedSnapshots.single(),
+            purchasePrice = purchasePrice,
+        )
+
         else -> PriceHistoryChart(
             snapshots = pricedSnapshots,
             purchasePrice = purchasePrice,
@@ -263,37 +265,6 @@ private fun DetailHeader(
             )
         }
     }
-}
-
-@Composable
-private fun EmptyPriceHistory() {
-    val dimens = LocalDimens.current
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = dimens.padding.extraLarge),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        EmptyStateGlyph(
-            modifier = Modifier
-                .size(dimens.iconSize.extraLarge)
-                .testTag(PriceHistoryDetailScreen.Tag.EMPTY_STATE),
-        )
-        Text(
-            modifier = Modifier.padding(top = dimens.padding.small),
-            text = stringResource(Res.string.dev__screen_inventory__price_history_detail__empty_state),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun EmptyStateGlyph(modifier: Modifier = Modifier) {
-    PriceTrendGlyph(
-        trend = PriceTrend.NEUTRAL,
-        modifier = modifier.alpha(EMPTY_STATE_GLYPH_ALPHA),
-    )
 }
 
 internal object PriceHistoryDetailScreen {
