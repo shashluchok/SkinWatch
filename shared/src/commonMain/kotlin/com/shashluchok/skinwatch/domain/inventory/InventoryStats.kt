@@ -9,6 +9,8 @@ import com.shashluchok.skinwatch.domain.steam.Money
  * rows in one transaction (see `CurrencyConversionRepository.convertAll`) -- so the amounts here can
  * be summed directly, without per-item conversion.
  *
+ * An item with no price reading yet counts at its purchase price, which keeps the total complete at
+ * the cost of that item showing no gain or loss.
  */
 internal data class InventoryStats(
     val currentValue: Money,

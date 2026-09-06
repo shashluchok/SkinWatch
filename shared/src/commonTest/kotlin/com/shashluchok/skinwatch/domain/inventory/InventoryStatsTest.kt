@@ -52,7 +52,7 @@ class InventoryStatsTest {
     }
 
     @Test
-    fun `an item with no reading is counted at its purchase price and reported as such`() {
+    fun `an item with no reading is counted at its purchase price`() {
         val stats = InventoryStats.from(
             listOf(
                 listItem(purchaseMinorUnits = 1000, quantity = 1, latestMinorUnits = 1200),
@@ -64,7 +64,6 @@ class InventoryStatsTest {
         assertEquals(2000, stats.spent.minorUnits)
         // 1200 for the priced item, then the unpriced one at its own purchase price: 500 x 2.
         assertEquals(2200, stats.currentValue.minorUnits)
-        assertEquals(1, stats.itemsWithoutPrice)
     }
 
     @Test

@@ -64,6 +64,7 @@ internal val domainModule = module {
             priceSnapshotRepository = get(),
             resolveDisplayCurrency = get(),
             priceSyncStatusRepository = get(),
+            itemSyncStatusRepository = get(),
         )
     }
     single { SyncPriceSnapshotsIfStaleInteractor(priceSyncStatusRepository = get(), syncPriceSnapshots = get()) }

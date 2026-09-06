@@ -24,6 +24,7 @@ internal class SyncPriceSnapshotsInteractor(
     private val priceSnapshotRepository: PriceSnapshotRepository,
     private val resolveDisplayCurrency: ResolveDisplayCurrencyInteractor,
     private val priceSyncStatusRepository: PriceSyncStatusRepository,
+    private val itemSyncStatusRepository: ItemSyncStatusRepository,
 ) {
     private val runMutex = Mutex()
     private val mutableIsSyncing = MutableStateFlow(false)
@@ -43,23 +44,48 @@ internal class SyncPriceSnapshotsInteractor(
 
     private suspend fun runSync(): PriceSyncOutcome {
         val marketHashNames = inventoryRepository.getDistinctMarketHashNames()
-        // Nothing to sync
+        // Nothing tracked at all
         if (marketHashNames.isEmpty()) return PriceSyncOutcome.Skipped
-        mutableIsSyncing.value = true
-        val currency = resolveDisplayCurrency()
         // One shared capturedAt for the whole run, matching PriceSnapshotRepository.record's
         // existing contract for a batch of snapshots taken together.
         val capturedAt = Clock.System.now()
-        val allSucceeded = marketHashNames
-            .map { marketHashName ->
-                syncItem(marketHashName = marketHashName, currency = currency, capturedAt = capturedAt)
-            }.all { it }
+        val due = dueForSync(marketHashNames = marketHashNames, now = capturedAt)
+        val allSucceeded = syncAll(due = due, capturedAt = capturedAt)
 
         // Only a clean run advances this: marking a failed run completed would make the staleness
         // check treat the missing prices as fresh for another whole interval.
         if (allSucceeded) priceSyncStatusRepository.markCompleted(capturedAt)
 
         return if (allSucceeded) PriceSyncOutcome.Completed else PriceSyncOutcome.HadFailures
+    }
+
+    /** Nothing due succeeds trivially: every price is already fresh, so the pass is a finished one. */
+    private suspend fun syncAll(due: List<String>, capturedAt: Instant): Boolean {
+        if (due.isEmpty()) return true
+        mutableIsSyncing.value = true
+        val currency = resolveDisplayCurrency()
+
+        return due
+            .map { marketHashName ->
+                syncItem(marketHashName = marketHashName, currency = currency, capturedAt = capturedAt)
+            }.all { it }
+    }
+
+    /**
+     * Items whose price is actually old enough to be worth a request.
+     *
+     * Without this, one failing item turning the run into a `Result.retry()` would re-request every
+     * other item too, and repeating that under backoff is a direct route to
+     * [com.shashluchok.skinwatch.domain.steam.SteamMarketError.RateLimited] -- whose failures would
+     * schedule yet another retry.
+     */
+    private suspend fun dueForSync(marketHashNames: List<String>, now: Instant): List<String> {
+        val statuses = itemSyncStatusRepository.getAll()
+
+        return marketHashNames.filter { marketHashName ->
+            val lastSuccessAt = statuses[marketHashName]?.lastSuccessAt
+            lastSuccessAt == null || now - lastSuccessAt >= PRICE_SYNC_INTERVAL
+        }
     }
 
     /** Reports whether this item got a fresh price: one dead item must not abort the rest of the run. */
@@ -69,15 +95,23 @@ internal class SyncPriceSnapshotsInteractor(
             currency = currency,
         )
         val priceOverview = (overview as? SteamMarketResult.Success)?.data
-        if (priceOverview != null) {
+        if (priceOverview == null) {
+            itemSyncStatusRepository.markFailed(
+                marketHashName = marketHashName,
+                error = (overview as SteamMarketResult.Failure).error,
+                at = capturedAt,
+            )
+        } else {
             priceSnapshotRepository.record(
                 marketHashName = marketHashName,
                 overview = priceOverview,
                 currency = currency,
                 capturedAt = capturedAt,
             )
+            itemSyncStatusRepository.markSynced(marketHashName = marketHashName, at = capturedAt)
         }
         priceSnapshotRepository.compactHistory(marketHashName = marketHashName, now = capturedAt)
+
         return priceOverview != null
     }
 }

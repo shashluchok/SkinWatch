@@ -5,6 +5,7 @@ import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesync.FakeItemSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.FakePriceSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
@@ -30,12 +31,15 @@ internal class InventoryViewModelFixture {
         steamMarketRepository = steamMarketRepository,
     )
 
+    private val itemSyncStatusRepository = FakeItemSyncStatusRepository()
+
     private val syncPriceSnapshots = SyncPriceSnapshotsInteractor(
         inventoryRepository = inventoryRepository,
         steamMarketRepository = steamMarketRepository,
         priceSnapshotRepository = priceSnapshotRepository,
         resolveDisplayCurrency = resolveDisplayCurrency,
         priceSyncStatusRepository = priceSyncStatusRepository,
+        itemSyncStatusRepository = itemSyncStatusRepository,
     )
 
     fun newViewModel() = InventoryViewModel(

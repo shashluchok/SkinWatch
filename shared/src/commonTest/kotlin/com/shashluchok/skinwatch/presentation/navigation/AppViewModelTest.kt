@@ -11,6 +11,7 @@ import com.shashluchok.skinwatch.domain.debug.FakeDebugSettingsRepository
 import com.shashluchok.skinwatch.domain.debug.ObserveDebugSettingsInteractor
 import com.shashluchok.skinwatch.domain.inventory.FakeInventoryRepository
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesync.FakeItemSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.FakePriceSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.PriceSyncScheduler
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsIfStaleInteractor
@@ -58,6 +59,7 @@ class AppViewModelTest {
                     steamMarketRepository = FakeSteamMarketRepository(),
                 ),
                 priceSyncStatusRepository = FakePriceSyncStatusRepository(),
+                itemSyncStatusRepository = FakeItemSyncStatusRepository(),
             ),
         ),
         catalogSyncScheduler = CatalogSyncScheduler.EMPTY,

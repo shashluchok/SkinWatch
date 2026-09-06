@@ -24,6 +24,7 @@ class SyncPriceSnapshotsIfStaleInteractorTest {
             steamMarketRepository = FakeSteamMarketRepository(),
         ),
         priceSyncStatusRepository = priceSyncStatusRepository,
+        itemSyncStatusRepository = FakeItemSyncStatusRepository(),
     )
     private val interactor = SyncPriceSnapshotsIfStaleInteractor(
         priceSyncStatusRepository = priceSyncStatusRepository,

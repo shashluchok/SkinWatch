@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 
 class SyncPriceSnapshotsInteractorTest {
@@ -22,6 +23,7 @@ class SyncPriceSnapshotsInteractorTest {
     private val steamMarketRepository = FakeSteamMarketRepository()
     private val priceSnapshotRepository = FakePriceSnapshotRepository()
     private val priceSyncStatusRepository = FakePriceSyncStatusRepository()
+    private val itemSyncStatusRepository = FakeItemSyncStatusRepository()
     private val resolveDisplayCurrency = ResolveDisplayCurrencyInteractor(
         settingsRepository = FakeSettingsRepository(),
         steamMarketRepository = steamMarketRepository,
@@ -33,6 +35,7 @@ class SyncPriceSnapshotsInteractorTest {
         priceSnapshotRepository = priceSnapshotRepository,
         resolveDisplayCurrency = resolveDisplayCurrency,
         priceSyncStatusRepository = priceSyncStatusRepository,
+        itemSyncStatusRepository = itemSyncStatusRepository,
     )
 
     @Test
@@ -231,7 +234,7 @@ class SyncPriceSnapshotsInteractorTest {
     }
 
     @Test
-    fun `three duplicate items all see every snapshot across three sequential sync runs`() = runTest {
+    fun `a run moments after a successful one requests nothing again`() = runTest {
         val hashName = "AK-47 | Redline (Field-Tested)"
         repeat(3) {
             inventoryRepository.addItem(
@@ -241,34 +244,81 @@ class SyncPriceSnapshotsInteractorTest {
                 purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
             )
         }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
         val interactor = newInteractor()
 
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(
-                lowestPrice = Money(minorUnits = 1000, currency = SteamCurrency.USD),
-                medianPrice = null,
-                volume = null,
-            ),
-        )
         interactor.invoke()
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(
-                lowestPrice = Money(minorUnits = 1100, currency = SteamCurrency.USD),
-                medianPrice = null,
-                volume = null,
-            ),
+        val outcome = interactor.invoke()
+
+        assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
+        assertEquals(1, priceSnapshotRepository.recorded.size)
+        // Nothing was due, which is a finished pass rather than a skipped one.
+        assertEquals(PriceSyncOutcome.Completed, outcome)
+        assertEquals(2, priceSyncStatusRepository.markCompletedCalls.size)
+    }
+
+    @Test
+    fun `an item last priced longer ago than the interval is fetched again`() = runTest {
+        val hashName = "AK-47 | Redline (Field-Tested)"
+        inventoryRepository.addItem(
+            marketHashName = hashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
+        itemSyncStatusRepository.markSynced(
+            marketHashName = hashName,
+            at = Clock.System.now() - PRICE_SYNC_INTERVAL - 1.hours,
+        )
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        newInteractor().invoke()
+
+        assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    @Test
+    fun `an item that failed carries no success time, so the next run tries it again`() = runTest {
+        val hashName = "AK-47 | Redline (Field-Tested)"
+        inventoryRepository.addItem(
+            marketHashName = hashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+        val interactor = newInteractor()
+
         interactor.invoke()
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(
-                lowestPrice = Money(minorUnits = 1200, currency = SteamCurrency.USD),
-                medianPrice = null,
-                volume = null,
-            ),
-        )
         interactor.invoke()
 
-        assertEquals(3, priceSnapshotRepository.recorded.size)
-        assertEquals(3, priceSyncStatusRepository.markCompletedCalls.size)
+        assertEquals(2, steamMarketRepository.priceOverviewCalls.size)
+        val status = itemSyncStatusRepository.statuses.getValue(hashName)
+        assertTrue(status is ItemSyncStatus.Failed)
+        assertEquals(SteamMarketError.Network, status.error)
+    }
+
+    @Test
+    fun `a failure after a success keeps the earlier success time`() = runTest {
+        val hashName = "AK-47 | Redline (Field-Tested)"
+        inventoryRepository.addItem(
+            marketHashName = hashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        val syncedAt = Clock.System.now() - PRICE_SYNC_INTERVAL - 1.hours
+        itemSyncStatusRepository.markSynced(marketHashName = hashName, at = syncedAt)
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+
+        newInteractor().invoke()
+
+        val status = itemSyncStatusRepository.statuses.getValue(hashName)
+        assertTrue(status is ItemSyncStatus.Failed)
+        assertEquals(syncedAt, status.lastSuccessAt)
     }
 }
