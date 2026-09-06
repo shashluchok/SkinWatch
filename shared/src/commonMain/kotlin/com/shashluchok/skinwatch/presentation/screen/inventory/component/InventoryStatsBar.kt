@@ -16,15 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import com.shashluchok.skinwatch.domain.inventory.InventoryStats
-import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalSemanticColors
 import com.shashluchok.skinwatch.presentation.theme.tabularNumeric
-import kotlin.math.abs
-
-private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
-private const val PERCENT_MULTIPLIER = 100
-private const val TENTHS_PER_UNIT = 10
+import com.shashluchok.skinwatch.presentation.util.formatMoney
+import com.shashluchok.skinwatch.presentation.util.formatSignedDelta
 
 /**
  * Inventory totals above the list: what it is worth now, and how that compares to what was paid.
@@ -84,30 +80,11 @@ private fun DeltaRow(stats: InventoryStats, modifier: Modifier = Modifier) {
         )
         Text(
             modifier = Modifier.testTag(InventoryStatsBar.Tag.DELTA),
-            text = formatDelta(delta = stats.delta, fraction = stats.deltaFraction),
+            text = formatSignedDelta(delta = stats.delta, fraction = stats.deltaFraction),
             style = MaterialTheme.typography.labelMedium.tabularNumeric,
             color = deltaColor,
         )
     }
-}
-
-/** Signed amount plus its share of what was spent, e.g. `+140.5 USD (+12.8%)`. */
-private fun formatDelta(delta: Money, fraction: Float?): String {
-    val sign = if (delta.minorUnits >= 0) "+" else "-"
-    val amount = formatMoney(Money(minorUnits = abs(delta.minorUnits), currency = delta.currency))
-    val percent = fraction
-        ?.let {
-            val tenths = (abs(it) * PERCENT_MULTIPLIER * TENTHS_PER_UNIT).toLong()
-            " ($sign${tenths / TENTHS_PER_UNIT}.${tenths % TENTHS_PER_UNIT}%)"
-        }.orEmpty()
-
-    return "$sign$amount$percent"
-}
-
-/** Matches [InventoryItemCard]'s formatting: plain, locale-independent, e.g. `49.0 USD`. */
-private fun formatMoney(money: Money): String {
-    val major = money.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT
-    return "$major ${money.currency.name}"
 }
 
 internal object InventoryStatsBar {
@@ -115,6 +92,5 @@ internal object InventoryStatsBar {
         const val ROOT = "InventoryStatsBar"
         const val CURRENT_VALUE = "$ROOT.currentValue"
         const val DELTA = "$ROOT.delta"
-        const val ESTIMATE_MARKER = "$ROOT.estimateMarker"
     }
 }

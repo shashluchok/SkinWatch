@@ -40,6 +40,7 @@ import com.shashluchok.skinwatch.presentation.component.SingleLineFadeText
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
+import com.shashluchok.skinwatch.presentation.util.formatMoney
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__delete
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__edit
@@ -48,8 +49,6 @@ import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__no_
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__open_price_history__content_description
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__purchase_price_label
 import org.jetbrains.compose.resources.stringResource
-
-private const val MINOR_UNITS_PER_MAJOR_UNIT = 100.0
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -264,15 +263,6 @@ internal fun priceHistoryGlyphColor(
     PriceTrend.UP -> positive
     PriceTrend.DOWN -> negative
     PriceTrend.NEUTRAL -> neutral
-}
-
-/**
- * Plain, locale-independent formatting for now (e.g. "49.00 USD") -- exact currency symbol/
- * position/locale formatting is a follow-up visual-design pass, not decided by this screen.
- */
-private fun formatMoney(money: Money): String {
-    val major = money.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT
-    return "$major ${money.currency.name}"
 }
 
 internal object InventoryItemCard {
