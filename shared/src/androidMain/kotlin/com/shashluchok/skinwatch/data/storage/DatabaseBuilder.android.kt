@@ -13,6 +13,5 @@ internal fun createRoomDatabase(context: Context): AppDatabase {
             name = appContext.getDatabasePath(DATABASE_FILE_NAME).absolutePath,
         ).setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }
