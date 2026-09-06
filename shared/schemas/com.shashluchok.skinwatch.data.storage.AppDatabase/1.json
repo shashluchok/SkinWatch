@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "26bbdd0582e58885c785405788346ed5",
+    "identityHash": "fd84f1fde094a5170353582d5f51bbea",
     "entities": [
       {
         "tableName": "InventoryItem",
@@ -199,6 +199,45 @@
         }
       },
       {
+        "tableName": "ItemSyncStatus",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`marketHashName` TEXT NOT NULL, `lastAttemptAt` INTEGER NOT NULL, `lastSuccessAt` INTEGER, `lastErrorType` TEXT, `lastErrorMessage` TEXT, PRIMARY KEY(`marketHashName`))",
+        "fields": [
+          {
+            "fieldPath": "marketHashName",
+            "columnName": "marketHashName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAttemptAt",
+            "columnName": "lastAttemptAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSuccessAt",
+            "columnName": "lastSuccessAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastErrorType",
+            "columnName": "lastErrorType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastErrorMessage",
+            "columnName": "lastErrorMessage",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "marketHashName"
+          ]
+        }
+      },
+      {
         "tableName": "CatalogItem",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`marketHashName` TEXT NOT NULL, `displayName` TEXT NOT NULL, `iconUrl` TEXT NOT NULL, `category` INTEGER NOT NULL, PRIMARY KEY(`marketHashName`))",
         "fields": [
@@ -302,7 +341,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '26bbdd0582e58885c785405788346ed5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fd84f1fde094a5170353582d5f51bbea')"
     ]
   }
 }

@@ -15,6 +15,8 @@ import com.shashluchok.skinwatch.data.storage.inventory.InventoryDao
 import com.shashluchok.skinwatch.data.storage.inventory.InventoryItemEntity
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotDao
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotEntity
+import com.shashluchok.skinwatch.data.storage.pricesync.ItemSyncStatusDao
+import com.shashluchok.skinwatch.data.storage.pricesync.ItemSyncStatusEntity
 import com.shashluchok.skinwatch.data.storage.pricesync.PriceSyncStatusDao
 import com.shashluchok.skinwatch.data.storage.pricesync.PriceSyncStatusEntity
 import com.shashluchok.skinwatch.data.storage.settings.SettingsDao
@@ -32,6 +34,7 @@ internal const val DATABASE_FILE_NAME = "skinwatch.db"
         PriceSnapshotEntity::class,
         SettingsEntity::class,
         PriceSyncStatusEntity::class,
+        ItemSyncStatusEntity::class,
         CatalogItemEntity::class,
         CatalogSyncStatusEntity::class,
         DebugSettingsEntity::class,
@@ -50,6 +53,8 @@ internal abstract class AppDatabase : RoomDatabase() {
     internal abstract fun settingsDao(): SettingsDao
 
     internal abstract fun priceSyncStatusDao(): PriceSyncStatusDao
+
+    internal abstract fun itemSyncStatusDao(): ItemSyncStatusDao
 
     internal abstract fun catalogItemDao(): CatalogItemDao
 

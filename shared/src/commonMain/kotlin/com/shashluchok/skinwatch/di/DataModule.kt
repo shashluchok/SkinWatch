@@ -23,6 +23,7 @@ import com.shashluchok.skinwatch.data.storage.debug.InventoryRepositoryMediator
 import com.shashluchok.skinwatch.data.storage.debug.PriceSnapshotRepositoryMediator
 import com.shashluchok.skinwatch.data.storage.inventory.InventoryRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.pricesnapshot.PriceSnapshotRepositoryImpl
+import com.shashluchok.skinwatch.data.storage.pricesync.ItemSyncStatusRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.pricesync.PriceSyncStatusRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.settings.SettingsRepositoryImpl
 import com.shashluchok.skinwatch.data.storage.watchlist.WatchlistRepositoryImpl
@@ -34,6 +35,7 @@ import com.shashluchok.skinwatch.domain.exchangerate.CurrencyConversionRepositor
 import com.shashluchok.skinwatch.domain.exchangerate.ExchangeRateRepository
 import com.shashluchok.skinwatch.domain.inventory.InventoryRepository
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesync.ItemSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.PriceSyncStatusRepository
 import com.shashluchok.skinwatch.domain.settings.SettingsRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
@@ -77,6 +79,7 @@ internal val dataModule = module {
     single { get<AppDatabase>().priceSnapshotDao() }
     single { get<AppDatabase>().settingsDao() }
     single { get<AppDatabase>().priceSyncStatusDao() }
+    single { get<AppDatabase>().itemSyncStatusDao() }
     single<InventoryRepository> {
         InventoryRepositoryMediator(
             realRepository = InventoryRepositoryImpl(dao = get()),
@@ -94,6 +97,7 @@ internal val dataModule = module {
     }
     single<SettingsRepository> { SettingsRepositoryImpl(dao = get()) }
     single<PriceSyncStatusRepository> { PriceSyncStatusRepositoryImpl(dao = get()) }
+    single<ItemSyncStatusRepository> { ItemSyncStatusRepositoryImpl(dao = get()) }
     single<CurrencyConversionRepository> {
         CurrencyConversionRepositoryImpl(
             database = get(),
