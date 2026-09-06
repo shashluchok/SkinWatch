@@ -39,6 +39,12 @@ internal class PriceSnapshotRepositoryMediator(
             activeRepository(it.mockDataEnabled).observeSnapshots(marketHashName)
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeLatestSnapshots(): Flow<Map<String, PriceSnapshot>> =
+        debugSettingsRepository.settings.flatMapLatest {
+            activeRepository(it.mockDataEnabled).observeLatestSnapshots()
+        }
+
     override suspend fun compactHistory(marketHashName: String, now: Instant) =
         activeRepository().compactHistory(marketHashName = marketHashName, now = now)
 

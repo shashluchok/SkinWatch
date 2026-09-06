@@ -42,10 +42,12 @@ internal fun ProvideMainScreenAmbients(content: @Composable () -> Unit) {
     )
 
     SharedTransitionLayout {
-        val sharedElementConfig = SharedElementConfig(
-            scope = this@SharedTransitionLayout,
-            boundsTransform = boundsTransform,
-        )
+        val sharedElementConfig = remember(this@SharedTransitionLayout, boundsTransform) {
+            SharedElementConfig(
+                scope = this@SharedTransitionLayout,
+                boundsTransform = boundsTransform,
+            )
+        }
         CompositionLocalProvider(
             LocalModalHost provides modalHost,
             LocalSharedElementConfig provides sharedElementConfig,

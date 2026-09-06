@@ -59,7 +59,7 @@ class ObserveInventoryListInteractorTest {
     }
 
     @Test
-    fun `two rows sharing a marketHashName subscribe to its snapshots only once`() = runTest {
+    fun `rows are built without subscribing to any item's snapshot history`() = runTest {
         val hashName = "P250 | Sand Dune"
         inventoryRepository.addItem(
             marketHashName = hashName,
@@ -77,6 +77,8 @@ class ObserveInventoryListInteractorTest {
         val items = interactor().first()
 
         assertEquals(2, items.size)
-        assertEquals(1, priceSnapshotRepository.observeCallCounts[hashName])
+        // The latest reading per item arrives from one query, so no per-item history is subscribed
+        // to -- previously two rows of the same item opened a flow each and reduced whole histories.
+        assertEquals(emptyMap(), priceSnapshotRepository.observeCallCounts)
     }
 }

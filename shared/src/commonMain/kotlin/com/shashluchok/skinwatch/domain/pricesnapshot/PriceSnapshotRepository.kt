@@ -25,6 +25,12 @@ internal interface PriceSnapshotRepository {
     fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>>
 
     /**
+     * Latest snapshot per item, keyed by `marketHashName`. The inventory list needs one reading per
+     * row, so it takes this rather than subscribing per item and reducing whole histories itself.
+     */
+    fun observeLatestSnapshots(): Flow<Map<String, PriceSnapshot>>
+
+    /**
      * Thins out history older than 7 days to 1 reading/day and older than 90 days to
      * 1 reading/week, always keeping the last real reading of each collapsed period -- never a
      * synthetic average.
@@ -41,6 +47,8 @@ internal interface PriceSnapshotRepository {
             ) = Unit
 
             override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> = flowOf(emptyList())
+
+            override fun observeLatestSnapshots(): Flow<Map<String, PriceSnapshot>> = flowOf(emptyMap())
 
             override suspend fun compactHistory(marketHashName: String, now: Instant) = Unit
         }

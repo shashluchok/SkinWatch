@@ -200,6 +200,11 @@ private fun InventoryItemCardPrices(
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
+    val purchasePriceText = remember(listItem.item.purchasePrice) { formatMoney(listItem.item.purchasePrice) }
+    val marketPriceText = remember(listItem.latestSnapshot) {
+        listItem.latestSnapshot?.lowestPrice?.let(::formatMoney)
+    }
+
     Column(modifier = modifier) {
         Text(
             text = "x${listItem.item.quantity}",
@@ -214,7 +219,7 @@ private fun InventoryItemCardPrices(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = formatMoney(listItem.item.purchasePrice),
+                    text = purchasePriceText,
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
@@ -225,7 +230,7 @@ private fun InventoryItemCardPrices(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = listItem.latestSnapshot?.lowestPrice?.let(::formatMoney)
+                    text = marketPriceText
                         ?: stringResource(Res.string.dev__screen_inventory__item_card__no_price_data),
                     style = MaterialTheme.typography.bodyLarge,
                 )

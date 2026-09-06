@@ -27,6 +27,7 @@ import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModel
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
@@ -175,6 +176,12 @@ private fun PriceHistoryChartHost(
     val axisLabelStyle = MaterialTheme.typography.labelSmall
         .copy(fontFamily = AppFontFamilies.jetBrainsMono, color = onSurfaceVariant)
         .tabularNumeric
+    val getXStep = remember {
+        { _: CartesianChartModel, minX: Double, maxX: Double ->
+            ((maxX - minX) / X_STEP_DIVISION_COUNT).coerceAtLeast(1.0)
+        }
+    }
+
     ProvideVicoTheme(theme = rememberM3VicoTheme()) {
         CartesianChartHost(
             modifier = Modifier
@@ -195,7 +202,7 @@ private fun PriceHistoryChartHost(
                 bottomAxis = priceHistoryBottomAxis(labelStyle = axisLabelStyle, minX = minX, maxX = maxX),
                 marker = priceHistoryMarker(currency = currency, purchasePriceValue = purchasePriceValue),
                 decorations = purchasePriceDecorations(purchasePrice = purchasePrice),
-                getXStep = { _, minX, maxX -> ((maxX - minX) / X_STEP_DIVISION_COUNT).coerceAtLeast(1.0) },
+                getXStep = getXStep,
             ),
             modelProducer = modelProducer,
             zoomState = rememberVicoZoomState(
@@ -265,15 +272,15 @@ private fun priceHistoryLineProvider(purchasePriceValue: Double?): LineCartesian
         )
     }
 
-    return LineCartesianLayer.LineProvider.series(
-        LineCartesianLayer.rememberLine(
-            fill = lineFill,
-            stroke = LineCartesianLayer.LineStroke.Continuous(thickness = LocalDimens.current.border.thick),
-            areaFill = areaFill,
-            pointProvider = pointProvider,
-            interpolator = LineCartesianLayer.Interpolator.Sharp,
-        ),
+    val line = LineCartesianLayer.rememberLine(
+        fill = lineFill,
+        stroke = LineCartesianLayer.LineStroke.Continuous(thickness = LocalDimens.current.border.thick),
+        areaFill = areaFill,
+        pointProvider = pointProvider,
+        interpolator = LineCartesianLayer.Interpolator.Sharp,
     )
+
+    return remember(line) { LineCartesianLayer.LineProvider.series(line) }
 }
 
 /** Point markers colored to match [priceHistoryLineProvider]'s profit/loss line split, per point. */
@@ -512,14 +519,18 @@ private fun purchasePriceDecorations(purchasePrice: Money?): List<Decoration> {
     if (purchasePrice == null) return emptyList()
     val dimens = LocalDimens.current
     val outline = MaterialTheme.colorScheme.outline
-    return listOf(
-        HorizontalLine(
-            y = { purchasePrice.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT },
-            line = rememberLineComponent(
-                fill = Fill(outline),
-                thickness = dimens.border.thin,
-                shape = DashedShape(dashLength = dimens.padding.small, gapLength = dimens.padding.extraSmall),
-            ),
-        ),
+    val line = rememberLineComponent(
+        fill = Fill(outline),
+        thickness = dimens.border.thin,
+        shape = DashedShape(dashLength = dimens.padding.small, gapLength = dimens.padding.extraSmall),
     )
+
+    return remember(line, purchasePrice) {
+        listOf(
+            HorizontalLine(
+                y = { purchasePrice.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT },
+                line = line,
+            ),
+        )
+    }
 }

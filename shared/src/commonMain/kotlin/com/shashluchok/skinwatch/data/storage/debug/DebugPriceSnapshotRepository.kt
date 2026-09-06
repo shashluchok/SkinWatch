@@ -33,6 +33,13 @@ internal class DebugPriceSnapshotRepository : PriceSnapshotRepository {
     override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> =
         flowOf(snapshotsByMarketHashName[marketHashName].orEmpty())
 
+    override fun observeLatestSnapshots(): Flow<Map<String, PriceSnapshot>> = flowOf(
+        snapshotsByMarketHashName
+            .mapNotNull { (name, snapshots) ->
+                snapshots.maxByOrNull { it.capturedAt }?.let { name to it }
+            }.toMap(),
+    )
+
     override suspend fun compactHistory(marketHashName: String, now: Instant) = Unit
 
     private fun Long?.toSnapshot(

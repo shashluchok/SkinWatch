@@ -9,6 +9,7 @@ import kotlin.time.Instant
 
 internal class FakePriceSnapshotRepository : PriceSnapshotRepository {
     private val snapshotFlows = mutableMapOf<String, MutableStateFlow<List<PriceSnapshot>>>()
+    private val latestSnapshots = MutableStateFlow<Map<String, PriceSnapshot>>(emptyMap())
     val observeCallCounts = mutableMapOf<String, Int>()
     val recorded = mutableListOf<PriceSnapshot>()
     val compactHistoryCalls = mutableListOf<String>()
@@ -18,8 +19,7 @@ internal class FakePriceSnapshotRepository : PriceSnapshotRepository {
         lowestPrice: Money?,
         capturedAt: Instant,
     ) {
-        val flow = snapshotFlows.getOrPut(marketHashName) { MutableStateFlow(emptyList()) }
-        flow.value = flow.value + PriceSnapshot(
+        val snapshot = PriceSnapshot(
             marketHashName = marketHashName,
             currency = lowestPrice?.currency ?: SteamCurrency.USD,
             lowestPrice = lowestPrice,
@@ -27,6 +27,9 @@ internal class FakePriceSnapshotRepository : PriceSnapshotRepository {
             volume = null,
             capturedAt = capturedAt,
         )
+        val flow = snapshotFlows.getOrPut(marketHashName) { MutableStateFlow(emptyList()) }
+        flow.value += snapshot
+        publishLatest(snapshot)
     }
 
     override suspend fun record(
@@ -45,6 +48,7 @@ internal class FakePriceSnapshotRepository : PriceSnapshotRepository {
         )
         val flow = snapshotFlows.getOrPut(marketHashName) { MutableStateFlow(emptyList()) }
         flow.value = flow.value + recorded.last()
+        publishLatest(recorded.last())
     }
 
     override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> {
@@ -52,7 +56,16 @@ internal class FakePriceSnapshotRepository : PriceSnapshotRepository {
         return snapshotFlows.getOrPut(marketHashName) { MutableStateFlow(emptyList()) }
     }
 
+    override fun observeLatestSnapshots(): Flow<Map<String, PriceSnapshot>> = latestSnapshots
+
     override suspend fun compactHistory(marketHashName: String, now: Instant) {
         compactHistoryCalls += marketHashName
+    }
+
+    private fun publishLatest(snapshot: PriceSnapshot) {
+        val current = latestSnapshots.value[snapshot.marketHashName]
+        if (current == null || snapshot.capturedAt >= current.capturedAt) {
+            latestSnapshots.value = latestSnapshots.value + (snapshot.marketHashName to snapshot)
+        }
     }
 }

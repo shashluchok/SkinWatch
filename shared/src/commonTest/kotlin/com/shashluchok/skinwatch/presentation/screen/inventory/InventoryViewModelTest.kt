@@ -150,7 +150,7 @@ class InventoryViewModelTest {
     }
 
     @Test
-    fun `two rows sharing a marketHashName subscribe to its snapshots only once`() = runTest(dispatcher) {
+    fun `rows are built without subscribing to any item's snapshot history`() = runTest(dispatcher) {
         val viewModel = newViewModel()
         val hashName = "P250 | Sand Dune"
         inventoryRepository.addItem(
@@ -167,7 +167,7 @@ class InventoryViewModelTest {
         )
 
         assertEquals(2, viewModel.loadedItems().size)
-        assertEquals(1, priceSnapshotRepository.observeCallCounts[hashName])
+        assertEquals(emptyMap(), priceSnapshotRepository.observeCallCounts)
     }
 
     @Test

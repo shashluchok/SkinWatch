@@ -34,6 +34,11 @@ internal class PriceSnapshotRepositoryImpl(
     override fun observeSnapshots(marketHashName: String): Flow<List<PriceSnapshot>> =
         dao.observeForItem(marketHashName).map { entities -> entities.map { it.toDomain() } }
 
+    override fun observeLatestSnapshots(): Flow<Map<String, PriceSnapshot>> =
+        dao.observeLatestPerItem().map { entities ->
+            entities.associate { it.marketHashName to it.toDomain() }
+        }
+
     override suspend fun compactHistory(marketHashName: String, now: Instant) {
         val entities = dao.getAllForItem(marketHashName)
         val idsToDelete = idsToDeleteForRetention(

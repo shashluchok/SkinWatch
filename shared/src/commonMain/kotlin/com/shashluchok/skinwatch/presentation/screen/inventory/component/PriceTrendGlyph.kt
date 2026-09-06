@@ -56,9 +56,9 @@ internal fun priceTrend(latestSnapshot: PriceSnapshot?, purchasePrice: Money): P
 /**
  * Small animated bar-chart hint glyph. Each bar breathes on its own continuous, gap-free
  * `infiniteRepeatable` reverse loop, phase-shifted via [StartOffsetType.FastForward] from its
- * neighbors -- driving all four off one shared timeline (e.g. a single Lottie composition) leaves
- * some bars holding still while others catch up, since each would only occupy a sub-window of that
- * shared timeline.
+ * neighbors. One transition drives all four: the offsets live on the individual animations, so a
+ * shared timeline costs nothing in staggering while a transition per bar would multiply the running
+ * animations by the number of rows on screen.
  */
 @Composable
 internal fun PriceTrendGlyph(
@@ -83,8 +83,8 @@ internal fun PriceTrendGlyph(
         horizontalArrangement = Arrangement.spacedBy(BAR_GAP),
         verticalAlignment = Alignment.Bottom,
     ) {
+        val transition = rememberInfiniteTransition()
         heightFractions.forEachIndexed { index, heightFraction ->
-            val transition = rememberInfiniteTransition()
             val scale by transition.animateFloat(
                 initialValue = BAR_MIN_SCALE,
                 targetValue = 1f,
