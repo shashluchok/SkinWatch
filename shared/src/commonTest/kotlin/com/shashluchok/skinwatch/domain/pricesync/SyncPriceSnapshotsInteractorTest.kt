@@ -321,4 +321,56 @@ class SyncPriceSnapshotsInteractorTest {
         assertTrue(status is ItemSyncStatus.Failed)
         assertEquals(syncedAt, status.lastSuccessAt)
     }
+
+    @Test
+    fun `a rate limit ends the run instead of spending the quota on requests that cannot succeed`() = runTest {
+        listOf("first", "second", "third").forEach { hashName ->
+            inventoryRepository.addItem(
+                marketHashName = hashName,
+                iconUrl = "https://example.com/icon.png",
+                quantity = 1,
+                purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+            )
+        }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.RateLimited)
+
+        val outcome = newInteractor().invoke()
+
+        assertEquals(PriceSyncOutcome.HadFailures, outcome)
+        assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    @Test
+    fun `items left untried by a rate limit keep no status, so the next run still owes them`() = runTest {
+        listOf("first", "second").forEach { hashName ->
+            inventoryRepository.addItem(
+                marketHashName = hashName,
+                iconUrl = "https://example.com/icon.png",
+                quantity = 1,
+                purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+            )
+        }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.RateLimited)
+
+        newInteractor().invoke()
+
+        assertEquals(1, itemSyncStatusRepository.statuses.size)
+    }
+
+    @Test
+    fun `an ordinary failure does not end the run`() = runTest {
+        listOf("first", "second").forEach { hashName ->
+            inventoryRepository.addItem(
+                marketHashName = hashName,
+                iconUrl = "https://example.com/icon.png",
+                quantity = 1,
+                purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+            )
+        }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.InvalidResponse)
+
+        newInteractor().invoke()
+
+        assertEquals(2, steamMarketRepository.priceOverviewCalls.size)
+    }
 }

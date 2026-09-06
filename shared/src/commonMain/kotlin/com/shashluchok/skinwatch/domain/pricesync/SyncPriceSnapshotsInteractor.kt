@@ -4,6 +4,7 @@ import com.shashluchok.skinwatch.domain.inventory.InventoryRepository
 import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshotRepository
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
+import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,11 +65,18 @@ internal class SyncPriceSnapshotsInteractor(
         if (due.isEmpty()) return true
         mutableIsSyncing.value = true
         val currency = resolveDisplayCurrency()
+        var allSucceeded = true
 
-        return due
-            .map { marketHashName ->
-                syncItem(marketHashName = marketHashName, currency = currency, capturedAt = capturedAt)
-            }.all { it }
+        for (marketHashName in due) {
+            val result = syncItem(marketHashName = marketHashName, currency = currency, capturedAt = capturedAt)
+            if (result != ItemSyncResult.Synced) allSucceeded = false
+            // Once Steam is refusing on request volume, every further request this run is refused
+            // too. The untried items record no status and stay due, so the worker's backed-off
+            // retry collects them instead of this run spending the quota proving the point.
+            if (result == ItemSyncResult.RateLimited) break
+        }
+
+        return allSucceeded
     }
 
     /**
@@ -88,8 +96,12 @@ internal class SyncPriceSnapshotsInteractor(
         }
     }
 
-    /** Reports whether this item got a fresh price: one dead item must not abort the rest of the run. */
-    private suspend fun syncItem(marketHashName: String, currency: SteamCurrency, capturedAt: Instant): Boolean {
+    /** One dead item must not abort the run -- only a refusal that would apply to all of them does. */
+    private suspend fun syncItem(
+        marketHashName: String,
+        currency: SteamCurrency,
+        capturedAt: Instant,
+    ): ItemSyncResult {
         val overview = steamMarketRepository.getPriceOverview(
             marketHashName = marketHashName,
             currency = currency,
@@ -112,6 +124,22 @@ internal class SyncPriceSnapshotsInteractor(
         }
         priceSnapshotRepository.compactHistory(marketHashName = marketHashName, now = capturedAt)
 
-        return priceOverview != null
+        return when {
+            priceOverview != null -> ItemSyncResult.Synced
+            (overview as SteamMarketResult.Failure).error == SteamMarketError.RateLimited ->
+                ItemSyncResult.RateLimited
+
+            else -> ItemSyncResult.Failed
+        }
     }
+}
+
+private enum class ItemSyncResult {
+    Synced,
+
+    /** Failed for a reason of its own, leaving the rest of the run unaffected. */
+    Failed,
+
+    /** Steam is rejecting on request volume, so nothing else in this run could succeed either. */
+    RateLimited,
 }
