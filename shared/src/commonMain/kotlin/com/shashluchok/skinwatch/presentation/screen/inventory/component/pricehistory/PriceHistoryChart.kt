@@ -23,6 +23,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
+import com.patrykandpatrick.vico.compose.cartesian.CartesianMeasuringContext
 import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
@@ -182,11 +183,17 @@ private fun PriceHistoryChartHost(
         }
     }
 
+    val dimens = LocalDimens.current
+
     ProvideVicoTheme(theme = rememberM3VicoTheme()) {
         CartesianChartHost(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(CHART_HEIGHT_DP.dp),
+                .padding(
+                    start = dimens.padding.small,
+                    end = dimens.padding.medium,
+                    bottom = dimens.padding.medium,
+                ).height(CHART_HEIGHT_DP.dp),
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(
                     lineProvider = priceHistoryLineProvider(purchasePriceValue = purchasePriceValue),
@@ -332,11 +339,6 @@ private fun priceHistoryStartAxis(
     return VerticalAxis.rememberStart(
         label = rememberTextComponent(
             style = labelStyle,
-            padding = Insets(
-                top = dimens.padding.extraSmall,
-                bottom = dimens.padding.extraSmall,
-                end = dimens.padding.extraSmall,
-            ),
         ),
         guideline = rememberLineComponent(
             fill = Fill(outlineVariant.copy(alpha = CHART_GUIDELINE_ALPHA)),
@@ -347,10 +349,6 @@ private fun priceHistoryStartAxis(
             highlightColor = outline,
         ),
         itemPlacer = priceHistoryStartAxisItemPlacer(purchasePriceValue = purchasePriceValue),
-        // Vertical padding, not horizontal: the title is drawn unrotated then rotated -90 degrees
-        // to read bottom-to-top, so padding on this axis becomes the gap perpendicular to the text
-        // -- i.e. the breathing room between the title and the price labels next to it -- rather
-        // than padding along the (now vertical) reading direction.
         titleComponent = rememberTextComponent(
             style = labelStyle,
             padding = Insets(vertical = dimens.padding.extraSmall),
@@ -445,6 +443,10 @@ private fun priceHistoryBottomAxisItemPlacer(minX: Double, maxX: Double): Horizo
                 )
                 return evenlySpacedXValues(minX = minX, maxX = maxX, count = count)
             }
+
+            override fun getFirstLabelValue(context: CartesianMeasuringContext, maxLabelWidth: Float) = minX
+
+            override fun getLastLabelValue(context: CartesianMeasuringContext, maxLabelWidth: Float) = maxX
         }
     }
 }
