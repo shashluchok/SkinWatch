@@ -1,6 +1,6 @@
 package com.shashluchok.skinwatch.presentation.component
 
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.unit.dp
 
 /**
@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
  * A list then scrolls its first and last items fully clear of the bars rather than parking them
  * where they cannot be read or reached, while still showing content sliding under the blur.
  */
-internal val LocalTopBarInset = staticCompositionLocalOf { 0.dp }
+internal val LocalTopBarInset = compositionLocalOf { 0.dp }
 
 /** @see LocalTopBarInset */
-internal val LocalBottomBarInset = staticCompositionLocalOf { 0.dp }
+internal val LocalBottomBarInset = compositionLocalOf { 0.dp }

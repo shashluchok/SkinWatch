@@ -2,15 +2,12 @@ package com.shashluchok.skinwatch.presentation.screen.inventory
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.domain.inventory.InventoryStats
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryStatsBar
@@ -42,9 +39,6 @@ private fun InventoryTopBarContent(
     modifier: Modifier = Modifier,
 ) {
     val motion = LocalMotion.current
-    val revealSpec = remember(motion) {
-        tween<IntSize>(durationMillis = motion.duration.standard, easing = motion.easing.standard)
-    }
     val fadeSpec = remember(motion) {
         tween<Float>(durationMillis = motion.duration.standard, easing = motion.easing.standard)
     }
@@ -55,8 +49,8 @@ private fun InventoryTopBarContent(
     AnimatedVisibility(
         modifier = modifier,
         visible = stats != null,
-        enter = expandVertically(revealSpec) + fadeIn(fadeSpec),
-        exit = shrinkVertically(revealSpec) + fadeOut(fadeSpec),
+        enter = fadeIn(fadeSpec),
+        exit = fadeOut(fadeSpec),
     ) {
         // Kept so the totals stay put while a sync briefly puts the list back into a loading state,
         // rather than collapsing the bar and dropping everything below it by its height.

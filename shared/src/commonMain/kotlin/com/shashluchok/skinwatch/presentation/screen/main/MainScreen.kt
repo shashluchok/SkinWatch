@@ -1,7 +1,6 @@
 package com.shashluchok.skinwatch.presentation.screen.main
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -279,8 +278,10 @@ private fun MainTopBar(
                 .testTag(MainScreen.Tag.TOP_BAR)
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = dimens.padding.medium, vertical = dimens.padding.small)
-                .animateContentSize(),
+                // No animateContentSize: the bar's height is published as LocalTopBarInset, and
+                // animating it would hand the screens a new inset on every frame of a tab switch --
+                // relaying the whole list out each time, for a change nobody was watching for.
+                .padding(horizontal = dimens.padding.medium, vertical = dimens.padding.small),
             horizontalArrangement = Arrangement.spacedBy(dimens.padding.medium),
             // Top, not centre: a tab whose content runs to a second line would otherwise push the
             // title down to the middle of it, off the line its own figure sits on.
