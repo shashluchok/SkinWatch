@@ -75,7 +75,7 @@ Compose:
     active: true
   CompositionLocalAllowlist:
     active: true
-    allowedCompositionLocals: LocalDimens, LocalSemanticColors, LocalMotion, LocalModalHost, LocalSharedElementKeyTransition, LocalSharedElementConfig, LocalAnimatedVisibilityScope, LocalBottomBarInset
+    allowedCompositionLocals: LocalDimens, LocalSemanticColors, LocalMotion, LocalModalHost, LocalSharedElementKeyTransition, LocalSharedElementConfig, LocalAnimatedVisibilityScope, LocalBottomBarInset, LocalTopBarInset
   CompositionLocalNaming:
     active: true
   ContentEmitterReturningValues:

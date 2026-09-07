@@ -2,20 +2,14 @@ package com.shashluchok.skinwatch.presentation.screen.inventory.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import com.shashluchok.skinwatch.domain.inventory.InventoryStats
 import com.shashluchok.skinwatch.presentation.component.AnimatedFadeText
@@ -34,41 +28,30 @@ private val DELTA_START_DELAY = 160.milliseconds
 private const val DELTA_COLOR_LABEL = "InventoryStatsBar.deltaColor"
 
 /**
- * Inventory totals above the list: what it is worth now, and how that compares to what was paid.
- * The estimate marker appears only while some items still lack a price reading -- see
- * [InventoryStats] for how those are counted.
+ * Inventory totals, shown inside the app top bar to the right of the tab title.
+ *
+ * Right-aligned and sized to its content: the title keeps the left of the bar, and the figures line
+ * up against the opposite edge so the two read as a header row rather than as a stack.
+ *
+ * Draws no background of its own -- the bar it sits in already provides one, and the list is meant
+ * to be seen passing under the blur rather than meeting an opaque edge.
  */
 @Composable
 internal fun InventoryStatsBar(stats: InventoryStats, modifier: Modifier = Modifier) {
-    val dimens = LocalDimens.current
-
     Column(
-        // The list scrolls under this bar, so without swallowing taps they land on whichever card
-        // happens to be behind it.
-        modifier = modifier
-            .pointerInput(Unit) { detectTapGestures {} }
-            .testTag(InventoryStatsBar.Tag.ROOT),
+        modifier = modifier.testTag(InventoryStatsBar.Tag.ROOT),
+        horizontalAlignment = Alignment.End,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = dimens.padding.medium, vertical = dimens.padding.small),
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(dimens.padding.extraSmall),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AnimatedFadeText(
-                    modifier = Modifier.testTag(InventoryStatsBar.Tag.CURRENT_VALUE),
-                    text = formatMoney(stats.currentValue),
-                    style = MaterialTheme.typography.headlineSmall.tabularNumeric,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            DeltaRow(stats = stats)
-        }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        // Set in the tab title's own style: the two sit on one line of the bar and read as a single
+        // header -- what you are looking at on the left, what it is worth on the right.
+        AnimatedFadeText(
+            modifier = Modifier.testTag(InventoryStatsBar.Tag.CURRENT_VALUE),
+            text = formatMoney(stats.currentValue),
+            style = MaterialTheme.typography.titleLarge.tabularNumeric,
+            color = MaterialTheme.colorScheme.onSurface,
+            contentAlignment = Alignment.TopEnd,
+        )
+        DeltaRow(stats = stats)
     }
 }
 
@@ -101,6 +84,7 @@ private fun DeltaRow(stats: InventoryStats, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelMedium.tabularNumeric,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             startDelay = SPENT_START_DELAY,
+            contentAlignment = Alignment.TopEnd,
         )
         AnimatedFadeText(
             modifier = Modifier.testTag(InventoryStatsBar.Tag.DELTA),
@@ -108,6 +92,7 @@ private fun DeltaRow(stats: InventoryStats, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelMedium.tabularNumeric,
             color = deltaColor,
             startDelay = DELTA_START_DELAY,
+            contentAlignment = Alignment.TopEnd,
         )
     }
 }

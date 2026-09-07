@@ -8,6 +8,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -29,6 +30,7 @@ internal fun AnimatedFadeText(
     style: TextStyle = LocalTextStyle.current,
     color: Color = Color.Unspecified,
     startDelay: Duration = Duration.ZERO,
+    contentAlignment: Alignment = Alignment.TopStart,
 ) {
     val delayMillis = startDelay.inWholeMilliseconds.toInt()
     // Taken from the theme rather than kept as a constant here, so anything that has to move in step
@@ -46,6 +48,7 @@ internal fun AnimatedFadeText(
                     animationSpec = tween(durationMillis = durationMillis, delayMillis = delayMillis),
                 )
         },
+        contentAlignment = contentAlignment,
         label = TRANSITION_LABEL,
     ) { targetText ->
         Text(text = targetText, style = style, color = color)

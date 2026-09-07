@@ -5,14 +5,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,20 +20,17 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.domain.inventory.InventoryItem
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
-import com.shashluchok.skinwatch.domain.inventory.InventoryStats
 import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
+import com.shashluchok.skinwatch.presentation.component.LocalTopBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementKeyTransition
@@ -43,11 +38,10 @@ import com.shashluchok.skinwatch.presentation.screen.inventory.component.DeleteC
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.EditItemBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCard
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryItemCardSkeleton
-import com.shashluchok.skinwatch.presentation.screen.inventory.component.InventoryStatsBar
 import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory.PriceHistoryDetailScreen
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
-import com.shashluchok.skinwatch.presentation.util.plusBottom
+import com.shashluchok.skinwatch.presentation.util.plusVertical
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__empty_state
 import org.jetbrains.compose.resources.stringResource
@@ -75,20 +69,18 @@ private fun InventoryScreen(
     onAction: (InventoryViewModel.Action) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
+    // The totals live in the app top bar now, so this screen is only its list -- and the list runs
+    // the full height, adding the bars back as padding so it can be seen passing under them.
+    InventoryContent(
         modifier = modifier.testTag(InventoryScreen.Tag.ROOT),
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            InventoryStatsBar(stats = (state.content as? InventoryViewModel.State.Content.Items)?.stats)
-        },
-    ) { contentPadding ->
-        InventoryContent(
-            content = state.content,
-            expandedContextMenuItemId = state.contextMenuItem?.id,
-            contentPadding = contentPadding.plusBottom(LocalBottomBarInset.current),
-            onAction = onAction,
-        )
-    }
+        content = state.content,
+        expandedContextMenuItemId = state.contextMenuItem?.id,
+        contentPadding = PaddingValues().plusVertical(
+            top = LocalTopBarInset.current,
+            bottom = LocalBottomBarInset.current,
+        ),
+        onAction = onAction,
+    )
 
     state.editSheet?.let { sheet ->
         RegisterEditSheet(sheet = sheet, onAction = onAction)
@@ -105,33 +97,12 @@ private fun InventoryScreen(
 }
 
 @Composable
-private fun InventoryStatsBar(stats: InventoryStats?) {
-    val motion = LocalMotion.current
-
-    val expandSpec = remember(motion) {
-        tween<IntSize>(
-            durationMillis = motion.duration.deliberate,
-            delayMillis = motion.duration.deliberate,
-            easing = motion.easing.standard,
-        )
-    }
-
-    AnimatedVisibility(
-        visible = stats != null,
-        enter = expandVertically(expandSpec),
-    ) {
-        val lastStats = remember { mutableStateOf(stats) }
-        stats?.let { lastStats.value = it }
-        lastStats.value?.let { InventoryStatsBar(stats = it) }
-    }
-}
-
-@Composable
 private fun InventoryContent(
     content: InventoryViewModel.State.Content,
     expandedContextMenuItemId: Long?,
     contentPadding: PaddingValues,
     onAction: (InventoryViewModel.Action) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val sharedElementKeyTransition = LocalSharedElementKeyTransition.current
     val listState = rememberLazyListState()
@@ -141,6 +112,7 @@ private fun InventoryContent(
     }
 
     AnimatedContent(
+        modifier = modifier,
         targetState = content,
         transitionSpec = {
             fadeIn(cardVisibilityAnimationSpec) togetherWith fadeOut(cardVisibilityAnimationSpec)

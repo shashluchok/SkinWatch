@@ -13,13 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shashluchok.skinwatch.presentation.component.LocalBottomBarInset
+import com.shashluchok.skinwatch.presentation.component.LocalTopBarInset
 import com.shashluchok.skinwatch.presentation.component.modal.host.LocalModalHost
 import com.shashluchok.skinwatch.presentation.component.modal.host.ModalRequest
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyChangeConfirmationDialog
 import com.shashluchok.skinwatch.presentation.screen.settings.component.CurrencyPickerBottomSheetContent
 import com.shashluchok.skinwatch.presentation.screen.settings.component.DebugPanel
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
-import com.shashluchok.skinwatch.presentation.util.plusBottom
+import com.shashluchok.skinwatch.presentation.util.plusVertical
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_auto_option
 import com.shashluchok.skinwatch.resources.dev__screen_settings__currency_row__title
@@ -52,7 +53,14 @@ private fun SettingsScreen(
         modifier = modifier.testTag(SettingsScreen.Tag.ROOT),
         contentWindowInsets = WindowInsets(0),
     ) { contentPadding ->
-        Column(modifier = Modifier.padding(contentPadding.plusBottom(LocalBottomBarInset.current))) {
+        Column(
+            modifier = Modifier.padding(
+                contentPadding.plusVertical(
+                    top = LocalTopBarInset.current,
+                    bottom = LocalBottomBarInset.current,
+                ),
+            ),
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
