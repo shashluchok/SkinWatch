@@ -3,12 +3,12 @@ package com.shashluchok.skinwatch.domain.catalog
 internal class FakeItemCatalogRepository : ItemCatalogRepository {
     val clearCategoryCalls = mutableListOf<CatalogCategory>()
     val insertItemsCalls = mutableListOf<Pair<CatalogCategory, List<CatalogItem>>>()
-    val searchCalls = mutableListOf<String>()
+    val searchCalls = mutableListOf<List<String>>()
     var searchResult: List<CatalogItem> = emptyList()
     var emptyResult = true
 
-    override suspend fun search(query: String): List<CatalogItem> {
-        searchCalls += query
+    override suspend fun search(tokens: List<String>): List<CatalogItem> {
+        searchCalls += tokens
         return searchResult
     }
 

@@ -7,11 +7,25 @@ import androidx.room3.Query
 
 @Dao
 internal interface CatalogItemDao {
+    /**
+     * Fixed parameters rather than SQL built per call, so no user input is spliced into the
+     * statement. An unused word binds null and matches everything.
+     */
     @Query(
-        "SELECT * FROM CatalogItem WHERE displayName LIKE '%' || :query || '%' COLLATE NOCASE " +
-            "ORDER BY displayName LIMIT 50",
+        "SELECT * FROM CatalogItem WHERE " +
+            "(:first IS NULL OR searchName LIKE '%' || :first || '%') AND " +
+            "(:second IS NULL OR searchName LIKE '%' || :second || '%') AND " +
+            "(:third IS NULL OR searchName LIKE '%' || :third || '%') AND " +
+            "(:fourth IS NULL OR searchName LIKE '%' || :fourth || '%') " +
+            "ORDER BY CASE WHEN searchName LIKE :first || '%' THEN 0 ELSE 1 END, displayName " +
+            "LIMIT 50",
     )
-    suspend fun search(query: String): List<CatalogItemEntity>
+    suspend fun search(
+        first: String?,
+        second: String?,
+        third: String?,
+        fourth: String?,
+    ): List<CatalogItemEntity>
 
     @Query("SELECT COUNT(*) FROM CatalogItem")
     suspend fun count(): Int

@@ -1,7 +1,7 @@
 package com.shashluchok.skinwatch.domain.catalog
 
 internal interface ItemCatalogRepository {
-    suspend fun search(query: String): List<CatalogItem>
+    suspend fun search(tokens: List<String>): List<CatalogItem>
 
     suspend fun clearCategory(category: CatalogCategory)
 
@@ -11,7 +11,7 @@ internal interface ItemCatalogRepository {
 
     companion object {
         val EMPTY = object : ItemCatalogRepository {
-            override suspend fun search(query: String): List<CatalogItem> = emptyList()
+            override suspend fun search(tokens: List<String>): List<CatalogItem> = emptyList()
 
             override suspend fun clearCategory(category: CatalogCategory) = Unit
 

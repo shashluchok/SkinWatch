@@ -39,7 +39,7 @@ internal const val DATABASE_FILE_NAME = "skinwatch.db"
         CatalogSyncStatusEntity::class,
         DebugSettingsEntity::class,
     ],
-    version = 2,
+    version = 3,
 )
 @ColumnTypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)

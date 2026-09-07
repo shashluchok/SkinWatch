@@ -12,7 +12,7 @@ internal class SearchCatalogItemsInteractor(
     }
 
     suspend operator fun invoke(query: String): Result {
-        val items = catalogRepository.search(query)
+        val items = catalogRepository.search(query.toSearchTokens())
         return if (items.isEmpty() && catalogRepository.isEmpty()) {
             Result.CatalogUnavailable
         } else {

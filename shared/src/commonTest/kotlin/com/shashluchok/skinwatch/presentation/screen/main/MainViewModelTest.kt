@@ -79,7 +79,7 @@ class MainViewModelTest {
         dispatcher.scheduler.advanceTimeBy(SEARCH_DEBOUNCE)
         dispatcher.scheduler.runCurrent()
 
-        assertEquals(listOf("AK-47"), catalogRepository.searchCalls)
+        assertEquals(listOf(listOf("ak47")), catalogRepository.searchCalls)
         val sheet = viewModel.stateFlow.value.addSheet
         check(sheet is MainViewModel.AddSheetState.AddSearch)
         val status = sheet.status

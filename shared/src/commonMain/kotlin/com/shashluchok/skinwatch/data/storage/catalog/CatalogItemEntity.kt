@@ -1,5 +1,6 @@
 package com.shashluchok.skinwatch.data.storage.catalog
 
+import androidx.room3.ColumnInfo
 import androidx.room3.Entity
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
@@ -10,4 +11,6 @@ internal data class CatalogItemEntity(
     val displayName: String,
     val iconUrl: String,
     val category: Int,
+    @ColumnInfo(defaultValue = "")
+    val searchName: String,
 )

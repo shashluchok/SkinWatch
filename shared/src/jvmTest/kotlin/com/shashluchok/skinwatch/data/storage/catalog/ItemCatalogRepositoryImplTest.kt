@@ -47,10 +47,90 @@ class ItemCatalogRepositoryImplTest {
             items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
         )
 
-        val results = repository.search("redline")
+        val results = repository.search(listOf("redline"))
 
         assertEquals(1, results.size)
         assertEquals("AK-47 | Redline (Field-Tested)", results.single().marketHashName)
+    }
+
+    @Test
+    fun `every word has to appear but they need not be adjacent`() = runTest {
+        val repository = newRepository()
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
+        )
+
+        assertEquals(1, repository.search(listOf("ak", "redline")).size)
+        assertEquals(1, repository.search(listOf("redline", "tested")).size)
+    }
+
+    @Test
+    fun `the order the words are typed in does not matter`() = runTest {
+        val repository = newRepository()
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
+        )
+
+        assertEquals(
+            repository.search(listOf("ak", "redline")),
+            repository.search(listOf("redline", "ak")),
+        )
+    }
+
+    @Test
+    fun `a word absent from the name rules the item out`() = runTest {
+        val repository = newRepository()
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
+        )
+
+        assertEquals(emptyList(), repository.search(listOf("ak", "asiimov")))
+    }
+
+    @Test
+    fun `a word written across the name's punctuation still matches`() = runTest {
+        val repository = newRepository()
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
+        )
+
+        assertEquals(1, repository.search(listOf("ak47")).size)
+        assertEquals(1, repository.search(listOf("fieldtested")).size)
+    }
+
+    @Test
+    fun `no words at all leaves everything in`() = runTest {
+        val repository = newRepository()
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(
+                item("AK-47 | Redline", CatalogCategory.SKIN),
+                item("AWP | Asiimov", CatalogCategory.SKIN),
+            ),
+        )
+
+        assertEquals(2, repository.search(emptyList()).size)
+    }
+
+    @Test
+    fun `names starting with the first word come before names merely containing it`() = runTest {
+        val repository = newRepository()
+        repository.insertItems(
+            category = CatalogCategory.SKIN,
+            items = listOf(
+                item("AAA Sticker | Redline", CatalogCategory.SKIN),
+                item("Redline Rifle", CatalogCategory.SKIN),
+            ),
+        )
+
+        assertEquals(
+            listOf("Redline Rifle", "AAA Sticker | Redline"),
+            repository.search(listOf("redline")).map { it.displayName },
+        )
     }
 
     @Test
@@ -61,7 +141,7 @@ class ItemCatalogRepositoryImplTest {
             items = listOf(item("AK-47 | Redline (Field-Tested)", CatalogCategory.SKIN)),
         )
 
-        assertEquals(emptyList(), repository.search("nonexistent"))
+        assertEquals(emptyList(), repository.search(listOf("nonexistent")))
     }
 
     @Test
@@ -78,8 +158,8 @@ class ItemCatalogRepositoryImplTest {
 
         repository.clearCategory(CatalogCategory.SKIN)
 
-        assertEquals(emptyList(), repository.search("Redline"))
-        assertEquals(1, repository.search("Shooter").size)
+        assertEquals(emptyList(), repository.search(listOf("redline")))
+        assertEquals(1, repository.search(listOf("shooter")).size)
     }
 
     @Test
@@ -95,7 +175,7 @@ class ItemCatalogRepositoryImplTest {
             items = listOf(item("AWP | Asiimov", CatalogCategory.SKIN)),
         )
 
-        assertEquals(1, repository.search("Redline").size)
-        assertEquals(1, repository.search("Asiimov").size)
+        assertEquals(1, repository.search(listOf("redline")).size)
+        assertEquals(1, repository.search(listOf("asiimov")).size)
     }
 }

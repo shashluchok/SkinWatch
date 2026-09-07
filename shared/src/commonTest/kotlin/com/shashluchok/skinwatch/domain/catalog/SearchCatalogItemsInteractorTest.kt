@@ -23,7 +23,7 @@ class SearchCatalogItemsInteractorTest {
 
         val result = interactor(query = "Redline")
 
-        assertEquals(listOf("Redline"), catalogRepository.searchCalls)
+        assertEquals(listOf(listOf("redline")), catalogRepository.searchCalls)
         val loaded = assertIs<SearchCatalogItemsInteractor.Result.Loaded>(result)
         assertEquals(listOf(catalogItem("AK-47 | Redline")), loaded.items)
     }
