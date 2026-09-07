@@ -63,6 +63,17 @@
     <string name="dev__screen_debug_panel__title">Отладка</string>
     <string name="dev__screen_debug_panel__show_splash_row__title">Показывать заставку при запуске</string>
     <string name="dev__screen_debug_panel__mock_data_row__title">Тестовые данные в инвентаре</string>
+    <string name="dev__screen_debug_panel__sync_log_row__title">Лог синхронизации цен</string>
+    <string name="dev__screen_sync_log__title">Лог синхронизации цен</string>
+    <string name="dev__screen_sync_log__entry_count">Показано %1$d из %2$d</string>
+    <string name="dev__screen_sync_log__button__back">Назад</string>
+    <string name="dev__screen_sync_log__button__share">Поделиться</string>
+    <string name="dev__screen_sync_log__button__snapshot">Снимок</string>
+    <string name="dev__screen_sync_log__button__clear">Очистить</string>
+    <string name="dev__screen_sync_log__filter_chip__all">Все</string>
+    <string name="dev__screen_sync_log__empty_state">Записей пока нет</string>
+    <string name="dev__screen_sync_log__export_status__succeeded">Файл отправлен</string>
+    <string name="dev__screen_sync_log__export_status__failed">Не удалось выгрузить файл</string>
     <string name="navbar__inventory_tab">Инвентарь</string>
     <string name="navbar__watchlist_tab">Список</string>
     <string name="navbar__settings_tab">Настройки</string>

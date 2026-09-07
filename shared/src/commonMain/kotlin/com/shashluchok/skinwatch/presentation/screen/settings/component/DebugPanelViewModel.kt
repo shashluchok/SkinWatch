@@ -17,6 +17,7 @@ internal class DebugPanelViewModel(
     data class State(
         val showSplashScreen: Boolean = true,
         val mockDataEnabled: Boolean = false,
+        val isSyncLogVisible: Boolean = false,
     )
 
     sealed interface Action {
@@ -27,6 +28,10 @@ internal class DebugPanelViewModel(
         data class OnMockDataEnabledToggled(
             val enabled: Boolean,
         ) : Action
+
+        data object OnSyncLogClick : Action
+
+        data object OnSyncLogBackClick : Action
     }
 
     override val mutableStateFlow: MutableStateFlow<State> = MutableStateFlow(State())
@@ -49,6 +54,8 @@ internal class DebugPanelViewModel(
         when (action) {
             is Action.OnShowSplashScreenToggled -> onShowSplashScreenToggled(action.enabled)
             is Action.OnMockDataEnabledToggled -> onMockDataEnabledToggled(action.enabled)
+            Action.OnSyncLogClick -> state = state.copy(isSyncLogVisible = true)
+            Action.OnSyncLogBackClick -> state = state.copy(isSyncLogVisible = false)
         }
     }
 

@@ -6,6 +6,7 @@ import com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehi
 import com.shashluchok.skinwatch.presentation.screen.main.MainViewModel
 import com.shashluchok.skinwatch.presentation.screen.settings.SettingsViewModel
 import com.shashluchok.skinwatch.presentation.screen.settings.component.DebugPanelViewModel
+import com.shashluchok.skinwatch.presentation.screen.settings.component.synclog.SyncLogViewModel
 import com.shashluchok.skinwatch.presentation.screen.watchlist.WatchlistViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -62,6 +63,13 @@ internal val viewModelModule = module {
         DebugPanelViewModel(
             observeDebugSettings = get(),
             updateDebugSettings = get(),
+        )
+    }
+    viewModel {
+        SyncLogViewModel(
+            syncLogRepository = get(),
+            syncLogExporter = get(),
+            inspectSyncState = get(),
         )
     }
 }

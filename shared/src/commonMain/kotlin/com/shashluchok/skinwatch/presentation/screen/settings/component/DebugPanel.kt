@@ -7,15 +7,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.shashluchok.skinwatch.presentation.screen.settings.component.synclog.SyncLogContent
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.resources.Res
 import com.shashluchok.skinwatch.resources.dev__screen_debug_panel__mock_data_row__title
 import com.shashluchok.skinwatch.resources.dev__screen_debug_panel__show_splash_row__title
+import com.shashluchok.skinwatch.resources.dev__screen_debug_panel__sync_log_row__title
 import com.shashluchok.skinwatch.resources.dev__screen_debug_panel__title
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -44,6 +47,13 @@ private fun DebugPanel(
 ) {
     val dimens = LocalDimens.current
 
+    if (state.isSyncLogVisible) {
+        SyncLogContent(
+            modifier = modifier,
+            onBackClick = { onAction(DebugPanelViewModel.Action.OnSyncLogBackClick) },
+        )
+        return
+    }
     Column(
         modifier = modifier
             .testTag(DebugPanel.Tag.ROOT)
@@ -65,6 +75,18 @@ private fun DebugPanel(
             onCheckedChange = { onAction(DebugPanelViewModel.Action.OnMockDataEnabledToggled(it)) },
             testTag = DebugPanel.Tag.MOCK_DATA_SWITCH,
         )
+        TextButton(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(DebugPanel.Tag.SYNC_LOG_BUTTON),
+            onClick = { onAction(DebugPanelViewModel.Action.OnSyncLogClick) },
+        ) {
+            Text(
+                modifier = Modifier.weight(1f),
+                text = stringResource(Res.string.dev__screen_debug_panel__sync_log_row__title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
     }
 }
 
@@ -102,5 +124,6 @@ internal object DebugPanel {
         const val ROOT = "DebugPanel"
         const val SHOW_SPLASH_SCREEN_SWITCH = "$ROOT.showSplashScreenSwitch"
         const val MOCK_DATA_SWITCH = "$ROOT.mockDataSwitch"
+        const val SYNC_LOG_BUTTON = "$ROOT.syncLogButton"
     }
 }
