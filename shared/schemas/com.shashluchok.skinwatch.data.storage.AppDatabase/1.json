@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "fd84f1fde094a5170353582d5f51bbea",
+    "identityHash": "be4c826041e347d522ed22e708d893df",
     "entities": [
       {
         "tableName": "InventoryItem",
@@ -200,7 +200,7 @@
       },
       {
         "tableName": "ItemSyncStatus",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`marketHashName` TEXT NOT NULL, `lastAttemptAt` INTEGER NOT NULL, `lastSuccessAt` INTEGER, `lastErrorType` TEXT, `lastErrorMessage` TEXT, PRIMARY KEY(`marketHashName`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`marketHashName` TEXT NOT NULL, `lastAttemptAt` INTEGER NOT NULL, `lastSuccessAt` INTEGER, `lastErrorType` TEXT, `lastErrorMessage` TEXT, `consecutiveFailures` INTEGER NOT NULL, PRIMARY KEY(`marketHashName`))",
         "fields": [
           {
             "fieldPath": "marketHashName",
@@ -228,6 +228,12 @@
             "fieldPath": "lastErrorMessage",
             "columnName": "lastErrorMessage",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "consecutiveFailures",
+            "columnName": "consecutiveFailures",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -239,7 +245,7 @@
       },
       {
         "tableName": "CatalogItem",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`marketHashName` TEXT NOT NULL, `displayName` TEXT NOT NULL, `iconUrl` TEXT NOT NULL, `category` INTEGER NOT NULL, PRIMARY KEY(`marketHashName`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`marketHashName` TEXT NOT NULL, `displayName` TEXT NOT NULL, `iconUrl` TEXT NOT NULL, `category` INTEGER NOT NULL, `searchName` TEXT NOT NULL, PRIMARY KEY(`marketHashName`))",
         "fields": [
           {
             "fieldPath": "marketHashName",
@@ -263,6 +269,12 @@
             "fieldPath": "category",
             "columnName": "category",
             "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "searchName",
+            "columnName": "searchName",
+            "affinity": "TEXT",
             "notNull": true
           }
         ],
@@ -341,7 +353,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fd84f1fde094a5170353582d5f51bbea')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'be4c826041e347d522ed22e708d893df')"
     ]
   }
 }
