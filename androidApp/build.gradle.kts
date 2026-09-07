@@ -65,6 +65,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (project.hasProperty("signReleaseWithDebugKey")) {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
     compileOptions {
