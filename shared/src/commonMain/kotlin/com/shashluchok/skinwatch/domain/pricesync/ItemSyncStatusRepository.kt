@@ -13,7 +13,11 @@ internal interface ItemSyncStatusRepository {
 
     suspend fun markSynced(marketHashName: String, at: Instant)
 
-    suspend fun markFailed(marketHashName: String, error: SteamMarketError, at: Instant)
+    /** Returns the status it just wrote, so the caller can see how far along its curve the item is. */
+    suspend fun markFailed(marketHashName: String, error: SteamMarketError, at: Instant): ItemSyncStatus.Failed
+
+    /** Called when the last inventory item holding this hash is gone and the status outlives nothing. */
+    suspend fun delete(marketHashName: String)
 
     companion object {
         val EMPTY = object : ItemSyncStatusRepository {
@@ -23,7 +27,18 @@ internal interface ItemSyncStatusRepository {
 
             override suspend fun markSynced(marketHashName: String, at: Instant) = Unit
 
-            override suspend fun markFailed(marketHashName: String, error: SteamMarketError, at: Instant) = Unit
+            override suspend fun markFailed(
+                marketHashName: String,
+                error: SteamMarketError,
+                at: Instant,
+            ): ItemSyncStatus.Failed = ItemSyncStatus.Failed(
+                attemptedAt = at,
+                lastSuccessAt = null,
+                error = error,
+                consecutiveFailures = 1,
+            )
+
+            override suspend fun delete(marketHashName: String) = Unit
         }
     }
 }

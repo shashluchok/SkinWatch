@@ -85,6 +85,8 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.androidx.sqlite.bundled)
             implementation(libs.androidx.work.runtimeKtx)
+            // FileProvider and getSystemService, used by the price-sync diagnostic log.
+            implementation(libs.androidx.core.ktx)
         }
         commonMain.dependencies {
             implementation(libs.koin.core)

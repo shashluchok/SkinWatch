@@ -14,11 +14,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+
+private const val HASH_NAME = "AK-47 | Redline (Field-Tested)"
 
 class SyncPriceSnapshotsInteractorTest {
+    private suspend fun addTrackedItem(marketHashName: String = HASH_NAME) {
+        inventoryRepository.addItem(
+            marketHashName = marketHashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+    }
+
     private val inventoryRepository = FakeInventoryRepository()
     private val steamMarketRepository = FakeSteamMarketRepository()
     private val priceSnapshotRepository = FakePriceSnapshotRepository()
@@ -57,7 +71,7 @@ class SyncPriceSnapshotsInteractorTest {
             SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(1, priceSnapshotRepository.recorded.size)
         assertEquals(1, steamMarketRepository.priceOverviewCalls.count { it == hashName })
@@ -83,7 +97,7 @@ class SyncPriceSnapshotsInteractorTest {
             SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(1, priceSnapshotRepository.recorded.size)
         assertEquals("succeeds", priceSnapshotRepository.recorded.single().marketHashName)
@@ -99,7 +113,7 @@ class SyncPriceSnapshotsInteractorTest {
         )
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
 
-        val outcome = newInteractor().invoke()
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(PriceSyncOutcome.HadFailures, outcome)
         assertEquals(0, priceSyncStatusRepository.markCompletedCalls.size)
@@ -125,7 +139,7 @@ class SyncPriceSnapshotsInteractorTest {
             SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
-        val outcome = newInteractor().invoke()
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(PriceSyncOutcome.HadFailures, outcome)
         assertEquals(0, priceSyncStatusRepository.markCompletedCalls.size)
@@ -143,15 +157,15 @@ class SyncPriceSnapshotsInteractorTest {
             SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
-        val outcome = newInteractor().invoke()
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(PriceSyncOutcome.Completed, outcome)
         assertEquals(1, priceSyncStatusRepository.markCompletedCalls.size)
     }
 
     @Test
-    fun `an empty inventory reports Skipped rather than a completed run`() = runTest {
-        assertEquals(PriceSyncOutcome.Skipped, newInteractor().invoke())
+    fun `an empty inventory reports NothingDue rather than a completed run`() = runTest {
+        assertEquals(PriceSyncOutcome.NothingDue, newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER))
     }
 
     @Test
@@ -174,14 +188,14 @@ class SyncPriceSnapshotsInteractorTest {
             SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(setOf("fails", "succeeds"), priceSnapshotRepository.compactHistoryCalls.toSet())
     }
 
     @Test
     fun `an empty inventory is a no-op -- no fetch, no snapshot, no completed run`() = runTest {
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(0, steamMarketRepository.priceOverviewCalls.size)
         assertEquals(0, priceSnapshotRepository.recorded.size)
@@ -203,9 +217,10 @@ class SyncPriceSnapshotsInteractorTest {
         )
         val interactor = newInteractor()
 
-        val firstRun = launch { interactor.invoke() }
+        val firstRun = launch { interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER) }
         testScheduler.runCurrent() // let firstRun start and reach the delay, then pause there
-        interactor.invoke() // runMutex.tryLock() fails -- returns immediately, no second pass
+        // runMutex.tryLock() fails -- returns immediately, no second pass
+        interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER)
         testScheduler.advanceUntilIdle() // let firstRun's delay elapse and the run finish
 
         assertEquals(1, priceSyncStatusRepository.markCompletedCalls.size)
@@ -224,7 +239,7 @@ class SyncPriceSnapshotsInteractorTest {
         val interactor = newInteractor()
         assertTrue(!interactor.isSyncing.value)
 
-        val firstRun = launch { interactor.invoke() }
+        val firstRun = launch { interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER) }
         testScheduler.runCurrent() // run reaches the delay and pauses -- still "in flight" here
         assertTrue(interactor.isSyncing.value)
 
@@ -249,13 +264,13 @@ class SyncPriceSnapshotsInteractorTest {
         )
         val interactor = newInteractor()
 
-        interactor.invoke()
-        val outcome = interactor.invoke()
+        interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+        val outcome = interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
         assertEquals(1, priceSnapshotRepository.recorded.size)
-        // Nothing was due, which is a finished pass rather than a skipped one.
-        assertEquals(PriceSyncOutcome.Completed, outcome)
+        // Nothing was due -- still a finished pass, so it advances the timestamp like any other.
+        assertEquals(PriceSyncOutcome.NothingDue, outcome)
         assertEquals(2, priceSyncStatusRepository.markCompletedCalls.size)
     }
 
@@ -276,13 +291,13 @@ class SyncPriceSnapshotsInteractorTest {
             SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
     }
 
     @Test
-    fun `an item that failed carries no success time, so the next run tries it again`() = runTest {
+    fun `an item that failed carries no success time and records the error it failed with`() = runTest {
         val hashName = "AK-47 | Redline (Field-Tested)"
         inventoryRepository.addItem(
             marketHashName = hashName,
@@ -291,15 +306,160 @@ class SyncPriceSnapshotsInteractorTest {
             purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
         )
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
-        val interactor = newInteractor()
 
-        interactor.invoke()
-        interactor.invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
-        assertEquals(2, steamMarketRepository.priceOverviewCalls.size)
         val status = itemSyncStatusRepository.statuses.getValue(hashName)
         assertTrue(status is ItemSyncStatus.Failed)
         assertEquals(SteamMarketError.Network, status.error)
+        assertNull(status.lastSuccessAt)
+    }
+
+    /** The point of the backoff curve: one bad attempt costs one more attempt, not a wait. */
+    @Test
+    fun `an item that has failed once is tried again on the very next run`() = runTest {
+        addTrackedItem()
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+        val interactor = newInteractor()
+
+        interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+        interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        assertEquals(2, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    @Test
+    fun `an item that keeps failing is left alone between runs`() = runTest {
+        addTrackedItem()
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+        val interactor = newInteractor()
+
+        // The first two attempts are spent walking the curve; by the third the wait is real.
+        repeat(times = 4) { interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER) }
+
+        assertEquals(2, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    @Test
+    fun `an item whose backoff has aged past its wait is tried again`() = runTest {
+        addTrackedItem()
+        repeat(times = 3) {
+            itemSyncStatusRepository.markFailed(
+                marketHashName = HASH_NAME,
+                error = SteamMarketError.Network,
+                at = Clock.System.now() - 2.hours,
+            )
+        }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    @Test
+    fun `an unusable answer earns a long wait sooner than a network failure does`() = runTest {
+        addTrackedItem()
+        itemSyncStatusRepository.markFailed(
+            marketHashName = HASH_NAME,
+            error = SteamMarketError.InvalidResponse,
+            at = Clock.System.now() - 2.minutes,
+        )
+
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        // Two minutes clears a first network failure, but not a first unusable answer.
+        assertEquals(0, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    /** Waiting on an item that has failed its way to the end would freeze the timestamp forever. */
+    @Test
+    fun `an item that has been failing for a while does not hold back the completed timestamp`() = runTest {
+        addTrackedItem(marketHashName = "written-off")
+        addTrackedItem(marketHashName = "priceable")
+        repeat(times = 4) {
+            itemSyncStatusRepository.markFailed(
+                marketHashName = "written-off",
+                error = SteamMarketError.InvalidResponse,
+                at = Clock.System.now() - 2.days,
+            )
+        }
+        steamMarketRepository.priceOverviewResultsByHashName["written-off"] =
+            SteamMarketResult.Failure(SteamMarketError.InvalidResponse)
+        steamMarketRepository.priceOverviewResultsByHashName["priceable"] = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        assertEquals(PriceSyncOutcome.Completed, outcome)
+        assertEquals(1, priceSyncStatusRepository.markCompletedCalls.size)
+    }
+
+    @Test
+    fun `a manual run spends a request on an item every backoff would have withheld`() = runTest {
+        addTrackedItem()
+        repeat(times = 9) {
+            itemSyncStatusRepository.markFailed(
+                marketHashName = HASH_NAME,
+                error = SteamMarketError.InvalidResponse,
+                at = Clock.System.now(),
+            )
+        }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        newInteractor().invoke(trigger = SyncTrigger.MANUAL)
+
+        assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    /**
+     * The whole inventory failing identically is the shape of a run with no working network, not of
+     * an inventory full of dead items -- and marching on records a failure against every one of them.
+     */
+    @Test
+    fun `a run whose first items all fail the same way stops instead of walking the rest`() = runTest {
+        repeat(times = 8) { addTrackedItem(marketHashName = "item-$it") }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        assertEquals(3, steamMarketRepository.priceOverviewCalls.size)
+        assertEquals(PriceSyncOutcome.HadFailures, outcome)
+        assertEquals(emptyList(), priceSyncStatusRepository.markCompletedCalls)
+    }
+
+    @Test
+    fun `a run that is getting somewhere keeps going despite failures`() = runTest {
+        repeat(times = 8) { addTrackedItem(marketHashName = "item-$it") }
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+        steamMarketRepository.priceOverviewResultsByHashName["item-0"] = SteamMarketResult.Success(
+            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
+        )
+
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        assertEquals(8, steamMarketRepository.priceOverviewCalls.size)
+    }
+
+    @Test
+    fun `a retryable failure does hold back the completed timestamp`() = runTest {
+        inventoryRepository.addItem(
+            marketHashName = "offline",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
+        )
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        assertEquals(PriceSyncOutcome.HadFailures, outcome)
+        assertEquals(emptyList(), priceSyncStatusRepository.markCompletedCalls)
     }
 
     @Test
@@ -315,7 +475,7 @@ class SyncPriceSnapshotsInteractorTest {
         itemSyncStatusRepository.markSynced(marketHashName = hashName, at = syncedAt)
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
 
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         val status = itemSyncStatusRepository.statuses.getValue(hashName)
         assertTrue(status is ItemSyncStatus.Failed)
@@ -334,7 +494,7 @@ class SyncPriceSnapshotsInteractorTest {
         }
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.RateLimited)
 
-        val outcome = newInteractor().invoke()
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(PriceSyncOutcome.HadFailures, outcome)
         assertEquals(1, steamMarketRepository.priceOverviewCalls.size)
@@ -352,7 +512,7 @@ class SyncPriceSnapshotsInteractorTest {
         }
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.RateLimited)
 
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(1, itemSyncStatusRepository.statuses.size)
     }
@@ -369,7 +529,7 @@ class SyncPriceSnapshotsInteractorTest {
         }
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.InvalidResponse)
 
-        newInteractor().invoke()
+        newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(2, steamMarketRepository.priceOverviewCalls.size)
     }

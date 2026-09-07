@@ -9,6 +9,7 @@ import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
+import com.shashluchok.skinwatch.domain.pricesync.SyncTrigger
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
@@ -194,7 +195,7 @@ internal class InventoryViewModel(
      * makes the second call a no-op, so no extra guard is needed here.
      */
     private fun onSyncNowClick() {
-        viewModelScope.launch { syncPriceSnapshots() }
+        viewModelScope.launch { syncPriceSnapshots(trigger = SyncTrigger.MANUAL) }
     }
 
     private fun onDismissSheet() {
@@ -246,7 +247,7 @@ internal class InventoryViewModel(
     private fun onDeleteConfirmed() {
         val item = state.deleteConfirmationItem ?: return
         viewModelScope.launch {
-            removeInventoryItem(item.id)
+            removeInventoryItem(item)
             state = state.copy(deleteConfirmationItem = null)
         }
     }

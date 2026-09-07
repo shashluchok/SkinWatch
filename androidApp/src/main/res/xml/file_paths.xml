@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Only the directory the diagnostic log export writes into is shared. -->
+    <cache-path
+        name="shared-logs"
+        path="shared-logs/" />
+</paths>

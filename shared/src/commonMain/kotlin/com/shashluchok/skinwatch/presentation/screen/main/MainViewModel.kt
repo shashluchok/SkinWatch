@@ -6,6 +6,7 @@ import com.shashluchok.skinwatch.domain.catalog.SearchCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ import kotlin.time.Duration.Companion.milliseconds
 internal class MainViewModel(
     private val searchCatalogItems: SearchCatalogItemsInteractor,
     private val addInventoryItem: AddInventoryItemInteractor,
+    private val appScope: CoroutineScope,
 ) : BaseViewModel<MainViewModel.State, MainViewModel.Action>() {
     data class State(
         val addSheet: AddSheetState? = null,
@@ -167,14 +169,18 @@ internal class MainViewModel(
             state = state.copy(addSheet = sheet.copy(validationError = ValidationError.INVALID_PRICE))
             return
         }
-        viewModelScope.launch {
+        // Closed before the work starts, not after it finishes: the add ends with a Steam request
+        // that queues behind the shared request throttle and can take minutes, and holding the sheet
+        // open for it would also tie the request's lifetime to this screen -- dismissing it would
+        // cancel the fetch and leave the item permanently unpriced.
+        state = state.copy(addSheet = null)
+        appScope.launch {
             addInventoryItem(
                 marketHashName = sheet.selected.marketHashName,
                 iconUrl = sheet.selected.iconUrl,
                 quantity = quantity,
                 purchasePriceAmount = amount,
             )
-            state = state.copy(addSheet = null)
         }
     }
 

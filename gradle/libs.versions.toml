@@ -15,6 +15,7 @@ android-targetSdk = "37"
 
 # AndroidX
 androidx-activity = "1.13.0"
+androidx-core = "1.18.0"
 androidx-coreSplashscreen = "1.2.0"
 androidx-lifecycle = "2.11.0"
 androidx-work = "2.11.2"
@@ -68,6 +69,7 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 
 # AndroidX
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-coreSplashscreen" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }

@@ -13,5 +13,6 @@ internal fun createRoomDatabase(): AppDatabase {
         .databaseBuilder<AppDatabase>(name = File(appDataDir, DATABASE_FILE_NAME).absolutePath)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
+        .addAppMigrations()
         .build()
 }

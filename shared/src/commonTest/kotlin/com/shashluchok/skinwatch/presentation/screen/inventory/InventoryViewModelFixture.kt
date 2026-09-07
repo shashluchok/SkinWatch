@@ -48,7 +48,10 @@ internal class InventoryViewModelFixture {
             priceSnapshotRepository = priceSnapshotRepository,
         ),
         updateInventoryItem = UpdateInventoryItemInteractor(inventoryRepository = inventoryRepository),
-        removeInventoryItem = RemoveInventoryItemInteractor(inventoryRepository = inventoryRepository),
+        removeInventoryItem = RemoveInventoryItemInteractor(
+            inventoryRepository = inventoryRepository,
+            itemSyncStatusRepository = itemSyncStatusRepository,
+        ),
         syncPriceSnapshots = syncPriceSnapshots,
         observeLastSyncedAt = ObserveLastSyncedAtInteractor(priceSyncStatusRepository = priceSyncStatusRepository),
     )

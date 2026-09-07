@@ -20,4 +20,7 @@ internal interface ItemSyncStatusDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: ItemSyncStatusEntity)
+
+    @Query("DELETE FROM ItemSyncStatus WHERE marketHashName = :marketHashName")
+    suspend fun deleteByMarketHashName(marketHashName: String)
 }

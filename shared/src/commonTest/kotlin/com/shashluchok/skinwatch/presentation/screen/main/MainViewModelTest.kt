@@ -8,6 +8,7 @@ import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
 import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
 import com.shashluchok.skinwatch.presentation.component.ValidationError
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -43,7 +44,9 @@ class MainViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun newViewModel() = fixture.newViewModel()
+    // Shares the test dispatcher's scheduler, so work the ViewModel hands to the app-wide scope is
+    // still driven by this test's own runCurrent/advanceUntilIdle.
+    private fun newViewModel() = fixture.newViewModel(appScope = CoroutineScope(dispatcher))
 
     @Test
     fun `OnAddClick opens AddSearch with an empty query`() = runTest(dispatcher) {

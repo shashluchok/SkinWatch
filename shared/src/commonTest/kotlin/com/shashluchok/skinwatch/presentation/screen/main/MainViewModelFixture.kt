@@ -5,10 +5,12 @@ import com.shashluchok.skinwatch.domain.catalog.SearchCatalogItemsInteractor
 import com.shashluchok.skinwatch.domain.inventory.AddInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.FakeInventoryRepository
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesync.FakeItemSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.PriceSyncScheduler
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * Wires the real interactors the [MainViewModel] depends on over this project's existing fake
@@ -23,13 +25,18 @@ internal class MainViewModelFixture {
     val steamMarketRepository = FakeSteamMarketRepository()
     val settingsRepository = FakeSettingsRepository()
     val catalogRepository = FakeItemCatalogRepository()
+    val itemSyncStatusRepository = FakeItemSyncStatusRepository()
 
     private val resolveDisplayCurrency = ResolveDisplayCurrencyInteractor(
         settingsRepository = settingsRepository,
         steamMarketRepository = steamMarketRepository,
     )
 
-    fun newViewModel() = MainViewModel(
+    /**
+     * The add flow deliberately outlives the screen, so tests drive it through a scope they control
+     * rather than the ViewModel's own -- see [MainViewModel]'s use of `appScope` on save.
+     */
+    fun newViewModel(appScope: CoroutineScope) = MainViewModel(
         searchCatalogItems = SearchCatalogItemsInteractor(catalogRepository = catalogRepository),
         addInventoryItem = AddInventoryItemInteractor(
             inventoryRepository = inventoryRepository,
@@ -37,6 +44,8 @@ internal class MainViewModelFixture {
             priceSnapshotRepository = priceSnapshotRepository,
             resolveDisplayCurrency = resolveDisplayCurrency,
             priceSyncScheduler = PriceSyncScheduler.EMPTY,
+            itemSyncStatusRepository = itemSyncStatusRepository,
         ),
+        appScope = appScope,
     )
 }

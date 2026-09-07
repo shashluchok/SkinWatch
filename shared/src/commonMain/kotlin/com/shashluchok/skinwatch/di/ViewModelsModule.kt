@@ -28,6 +28,7 @@ internal val viewModelModule = module {
         MainViewModel(
             searchCatalogItems = get(),
             addInventoryItem = get(),
+            appScope = get(),
         )
     }
     viewModel {

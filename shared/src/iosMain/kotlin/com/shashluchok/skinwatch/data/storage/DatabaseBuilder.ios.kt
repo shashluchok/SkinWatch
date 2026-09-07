@@ -28,5 +28,6 @@ internal fun createRoomDatabase(): AppDatabase {
         // to kotlinx.coroutines there, so iOS uses `Dispatchers.Default` instead (same choice the
         // web bootstrap makes, for the same reason).
         .setQueryCoroutineContext(Dispatchers.Default)
+        .addAppMigrations()
         .build()
 }

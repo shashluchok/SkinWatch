@@ -41,6 +41,17 @@ complexity:
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']
+    # detekt's default test excludes predate Kotlin Multiplatform's Android host-test source
+    # set, so backtick-named test functions there would be reported as naming violations.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/androidHostTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/webTest/**'
   # expect/actual platform files conventionally keep a shared base name
   # (Platform.kt, Platform.android.kt, Platform.jvm.kt, ...) that won't match
   # the platform-specific declaration name inside (AndroidPlatform, JVMPlatform, ...).

@@ -22,20 +22,33 @@ internal class ItemSyncStatusRepositoryImpl(
             lastSuccessAt = at,
             lastErrorType = null,
             lastErrorMessage = null,
+            // A success ends whatever streak was running, so the next failure starts the curve over.
+            consecutiveFailures = 0,
         ),
     )
 
-    override suspend fun markFailed(marketHashName: String, error: SteamMarketError, at: Instant) = dao.upsert(
-        ItemSyncStatusEntity(
+    override suspend fun markFailed(
+        marketHashName: String,
+        error: SteamMarketError,
+        at: Instant,
+    ): ItemSyncStatus.Failed {
+        val existing = dao.get(marketHashName)
+        val entity = ItemSyncStatusEntity(
             marketHashName = marketHashName,
             lastAttemptAt = at,
             // Carried over from the existing row: a failure must not erase when this item was last
             // genuinely priced, which is exactly what decides whether it is due again.
-            lastSuccessAt = dao.get(marketHashName)?.lastSuccessAt,
+            lastSuccessAt = existing?.lastSuccessAt,
             lastErrorType = steamMarketErrorToType(error),
             lastErrorMessage = steamMarketErrorToMessage(error),
-        ),
-    )
+            consecutiveFailures = (existing?.consecutiveFailures ?: 0) + 1,
+        )
+        dao.upsert(entity)
+
+        return entity.toDomain() as ItemSyncStatus.Failed
+    }
+
+    override suspend fun delete(marketHashName: String) = dao.deleteByMarketHashName(marketHashName)
 }
 
 private fun List<ItemSyncStatusEntity>.toDomain(): Map<String, ItemSyncStatus> =
@@ -48,5 +61,8 @@ private fun ItemSyncStatusEntity.toDomain(): ItemSyncStatus = if (lastErrorType 
         attemptedAt = lastAttemptAt,
         lastSuccessAt = lastSuccessAt,
         error = typeToSteamMarketError(type = lastErrorType, message = lastErrorMessage),
+        // A row written before the counter existed reads as a single failure -- the forgiving end
+        // of the curve, which is where an item nobody has counted for should start.
+        consecutiveFailures = consecutiveFailures.coerceAtLeast(1),
     )
 }

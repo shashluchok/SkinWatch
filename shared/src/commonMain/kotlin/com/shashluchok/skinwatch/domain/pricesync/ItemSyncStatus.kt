@@ -26,5 +26,10 @@ internal sealed interface ItemSyncStatus {
         override val attemptedAt: Instant,
         override val lastSuccessAt: Instant?,
         val error: SteamMarketError,
+        /**
+         * Failures since the last success, counting this one. How far the item has walked its
+         * backoff curve -- see `PriceSyncRetryPolicy`.
+         */
+        val consecutiveFailures: Int,
     ) : ItemSyncStatus
 }

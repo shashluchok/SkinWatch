@@ -18,12 +18,26 @@ internal class FakeItemSyncStatusRepository : ItemSyncStatusRepository {
         statusesFlow.value += marketHashName to ItemSyncStatus.Synced(attemptedAt = at)
     }
 
-    override suspend fun markFailed(marketHashName: String, error: SteamMarketError, at: Instant) {
-        statusesFlow.value += marketHashName to ItemSyncStatus.Failed(
+    override suspend fun markFailed(
+        marketHashName: String,
+        error: SteamMarketError,
+        at: Instant,
+    ): ItemSyncStatus.Failed {
+        val existing = statusesFlow.value[marketHashName]
+        val failed = ItemSyncStatus.Failed(
             attemptedAt = at,
-            // Mirrors the real store: a failure keeps whatever success time was already recorded.
-            lastSuccessAt = statusesFlow.value[marketHashName]?.lastSuccessAt,
+            // Mirrors the real store: a failure keeps whatever success time was already recorded,
+            // and adds one to however many failures came before it.
+            lastSuccessAt = existing?.lastSuccessAt,
             error = error,
+            consecutiveFailures = ((existing as? ItemSyncStatus.Failed)?.consecutiveFailures ?: 0) + 1,
         )
+        statusesFlow.value += marketHashName to failed
+
+        return failed
+    }
+
+    override suspend fun delete(marketHashName: String) {
+        statusesFlow.value -= marketHashName
     }
 }

@@ -1,7 +1,9 @@
 package com.shashluchok.skinwatch.domain.inventory
 
 import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepository
+import com.shashluchok.skinwatch.domain.pricesync.FakeItemSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.FakePriceSyncScheduler
+import com.shashluchok.skinwatch.domain.pricesync.ItemSyncStatus
 import com.shashluchok.skinwatch.domain.pricesync.PRICE_SYNC_INTERVAL
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
@@ -14,6 +16,7 @@ import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 
 class AddInventoryItemInteractorTest {
@@ -22,6 +25,7 @@ class AddInventoryItemInteractorTest {
     private val steamMarketRepository = FakeSteamMarketRepository()
     private val settingsRepository = FakeSettingsRepository(initialCurrency = SteamCurrency.USD)
     private val priceSyncScheduler = FakePriceSyncScheduler()
+    private val itemSyncStatusRepository = FakeItemSyncStatusRepository()
     private val interactor = AddInventoryItemInteractor(
         inventoryRepository = inventoryRepository,
         steamMarketRepository = steamMarketRepository,
@@ -31,6 +35,7 @@ class AddInventoryItemInteractorTest {
             steamMarketRepository = steamMarketRepository,
         ),
         priceSyncScheduler = priceSyncScheduler,
+        itemSyncStatusRepository = itemSyncStatusRepository,
     )
 
     @Test
@@ -154,6 +159,62 @@ class AddInventoryItemInteractorTest {
                 volume = null,
             ),
         )
+
+        interactor(
+            marketHashName = "AK-47 | Redline (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePriceAmount = 5.0,
+        )
+
+        assertEquals(0, priceSyncScheduler.retrySyncScheduledCount)
+    }
+
+    /**
+     * The scheduled run decides what to re-request purely from the sync status, so an item priced at
+     * add time without one would count as never synced and be fetched again on the very next run.
+     */
+    @Test
+    fun `a successful add-time fetch records the item as synced, not only the snapshot`() = runTest {
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
+            SteamPriceOverview(
+                lowestPrice = Money(minorUnits = 5100, currency = SteamCurrency.USD),
+                medianPrice = null,
+                volume = null,
+            ),
+        )
+
+        interactor(
+            marketHashName = "AK-47 | Redline (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePriceAmount = 5.0,
+        )
+
+        val status = itemSyncStatusRepository.statuses.getValue("AK-47 | Redline (Field-Tested)")
+        assertTrue(status is ItemSyncStatus.Synced)
+    }
+
+    @Test
+    fun `a failed add-time fetch records the error it failed with`() = runTest {
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
+
+        interactor(
+            marketHashName = "AK-47 | Redline (Field-Tested)",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePriceAmount = 5.0,
+        )
+
+        val status = itemSyncStatusRepository.statuses.getValue("AK-47 | Redline (Field-Tested)")
+        assertTrue(status is ItemSyncStatus.Failed)
+        assertEquals(SteamMarketError.Network, status.error)
+    }
+
+    @Test
+    fun `an add-time failure no retry could fix schedules no retry run`() = runTest {
+        steamMarketRepository.priceOverviewResult =
+            SteamMarketResult.Failure(SteamMarketError.InvalidResponse)
 
         interactor(
             marketHashName = "AK-47 | Redline (Field-Tested)",

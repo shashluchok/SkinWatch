@@ -39,6 +39,9 @@ import com.shashluchok.skinwatch.domain.pricesync.ItemSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.PriceSyncStatusRepository
 import com.shashluchok.skinwatch.domain.settings.SettingsRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
+import com.shashluchok.skinwatch.domain.synclog.PlatformSyncStateInspector
+import com.shashluchok.skinwatch.domain.synclog.SyncLogExporter
+import com.shashluchok.skinwatch.domain.synclog.SyncLogRepository
 import com.shashluchok.skinwatch.domain.watchlist.WatchlistRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +58,12 @@ internal val dataModule = module {
     single<SteamMarketApi> { KtorSteamMarketApi(httpClient = get()) }
     single { SteamRateLimiter() }
     single<SteamMarketRepository> {
-        SteamMarketRepositoryImpl(api = get(), rateLimiter = get(), deviceRegionCode = ::currentDeviceRegionCode)
+        SteamMarketRepositoryImpl(
+            api = get(),
+            rateLimiter = get(),
+            deviceRegionCode = ::currentDeviceRegionCode,
+            syncLog = get(),
+        )
     }
 
     // Exchange rate
@@ -121,4 +129,10 @@ internal val dataModule = module {
     // Debug
     single { get<AppDatabase>().debugSettingsDao() }
     single<DebugSettingsRepository> { DebugSettingsRepositoryImpl(dao = get(), scope = get()) }
+
+    // Diagnostics -- no-ops unless a platform module supplies a real implementation, which keeps the
+    // instrumentation compiling everywhere while the log itself stays an Android-only investigation.
+    single<SyncLogRepository> { SyncLogRepository.EMPTY }
+    single<SyncLogExporter> { SyncLogExporter.EMPTY }
+    single<PlatformSyncStateInspector> { PlatformSyncStateInspector.EMPTY }
 }

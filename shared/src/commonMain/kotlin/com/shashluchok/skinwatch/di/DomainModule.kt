@@ -19,6 +19,7 @@ import com.shashluchok.skinwatch.domain.settings.ObserveSelectedCurrencyInteract
 import com.shashluchok.skinwatch.domain.settings.SetSelectedCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.GetDefaultCurrencyInteractor
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
+import com.shashluchok.skinwatch.domain.synclog.InspectSyncStateInteractor
 import org.koin.dsl.module
 
 /**
@@ -38,10 +39,17 @@ internal val domainModule = module {
             priceSnapshotRepository = get(),
             resolveDisplayCurrency = get(),
             priceSyncScheduler = get(),
+            itemSyncStatusRepository = get(),
+            syncLog = get(),
         )
     }
     single { UpdateInventoryItemInteractor(inventoryRepository = get()) }
-    single { RemoveInventoryItemInteractor(inventoryRepository = get()) }
+    single {
+        RemoveInventoryItemInteractor(
+            inventoryRepository = get(),
+            itemSyncStatusRepository = get(),
+        )
+    }
     single {
         ObserveInventoryListInteractor(
             inventoryRepository = get(),
@@ -65,9 +73,16 @@ internal val domainModule = module {
             resolveDisplayCurrency = get(),
             priceSyncStatusRepository = get(),
             itemSyncStatusRepository = get(),
+            syncLog = get(),
         )
     }
-    single { SyncPriceSnapshotsIfStaleInteractor(priceSyncStatusRepository = get(), syncPriceSnapshots = get()) }
+    single {
+        SyncPriceSnapshotsIfStaleInteractor(
+            priceSyncStatusRepository = get(),
+            syncPriceSnapshots = get(),
+            syncLog = get(),
+        )
+    }
     single { ObserveLastSyncedAtInteractor(priceSyncStatusRepository = get()) }
 
     // Catalog
@@ -80,6 +95,17 @@ internal val domainModule = module {
     }
     single { SyncCatalogItemsIfStaleInteractor(catalogSyncStatusRepository = get(), syncCatalogItems = get()) }
     single { SearchCatalogItemsInteractor(catalogRepository = get()) }
+
+    // Diagnostics
+    single {
+        InspectSyncStateInteractor(
+            inventoryRepository = get(),
+            itemSyncStatusRepository = get(),
+            priceSyncStatusRepository = get(),
+            platformInspector = get(),
+            syncLog = get(),
+        )
+    }
 
     // Debug (temporary -- see the `debug` package doc comment on DebugSettingsRepository)
     single { ObserveDebugSettingsInteractor(debugSettingsRepository = get()) }
