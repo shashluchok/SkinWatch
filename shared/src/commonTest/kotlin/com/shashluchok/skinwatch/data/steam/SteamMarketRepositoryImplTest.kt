@@ -191,4 +191,32 @@ class SteamMarketRepositoryImplTest {
         val failure = assertIs<SteamMarketResult.Failure>(result)
         assertEquals(SteamMarketError.RateLimited, failure.error)
     }
+
+    /**
+     * The regression this guards: `UnresolvedAddressException` -- a DNS failure -- extends
+     * `IllegalArgumentException`, and a blanket branch for that type used to report it as an
+     * unusable answer. That is the one classification an item is punished for, and a run with no
+     * working name resolution handed it to every item in the inventory at once.
+     */
+    @Test
+    fun `getPriceOverview does not read an unrecognised IllegalArgumentException as an unusable answer`() = runTest {
+        val mockEngine = MockEngine { _ -> throw IllegalArgumentException("unresolved address") }
+        val repository = repositoryWithEngine(mockEngine)
+
+        val result = repository.getPriceOverview(marketHashName = "Anything", currency = SteamCurrency.USD)
+
+        val failure = assertIs<SteamMarketResult.Failure>(result)
+        assertIs<SteamMarketError.Unknown>(failure.error)
+    }
+
+    @Test
+    fun `an unrecognised failure names the exception that caused it, so a log can be read`() = runTest {
+        val mockEngine = MockEngine { _ -> throw IllegalStateException("engine gave up") }
+        val repository = repositoryWithEngine(mockEngine)
+
+        val result = repository.getPriceOverview(marketHashName = "Anything", currency = SteamCurrency.USD)
+
+        val error = assertIs<SteamMarketError.Unknown>(assertIs<SteamMarketResult.Failure>(result).error)
+        assertEquals("IllegalStateException: engine gave up", error.message)
+    }
 }

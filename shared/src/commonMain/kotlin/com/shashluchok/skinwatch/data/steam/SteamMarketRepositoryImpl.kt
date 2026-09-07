@@ -31,7 +31,7 @@ internal class SteamMarketRepositoryImpl(
         rateLimiter.awaitTurn(SteamEndpoint.PRICE_OVERVIEW)
         val dto = api.getPriceOverview(marketHashName = marketHashName, currency = currency)
         // toDomain is called here, inside runCatching, so a malformed price string (thrown by
-        // SteamPriceParser as IllegalArgumentException) is caught below rather than propagating.
+        // SteamPriceParser as SteamPriceFormatException) is caught below rather than propagating.
         if (dto.success) dto.toDomain(currency) else null
     }.fold(
         onSuccess = { overview ->
@@ -70,8 +70,11 @@ internal class SteamMarketRepositoryImpl(
         is FailToConnectException,
         -> SteamMarketError.Network
         is SerializationException -> SteamMarketError.InvalidResponse
-        // SteamPriceParser.parse throws this for malformed/unexpected price strings.
-        is IllegalArgumentException -> SteamMarketError.InvalidResponse
-        else -> SteamMarketError.Unknown(message)
+        is SteamPriceFormatException -> SteamMarketError.InvalidResponse
+        // Anything unrecognised is reported as unknown rather than guessed at. There used to be a
+        // blanket `is IllegalArgumentException` branch here for the parser, and it swallowed
+        // UnresolvedAddressException -- a plain DNS failure -- reporting a whole inventory as
+        // permanently unpriceable.
+        else -> SteamMarketError.Unknown("${this::class.simpleName}: $message")
     }
 }

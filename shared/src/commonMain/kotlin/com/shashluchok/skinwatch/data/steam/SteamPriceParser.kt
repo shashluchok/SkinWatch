@@ -32,8 +32,8 @@ internal object SteamPriceParser {
 
     fun parse(text: String, currency: SteamCurrency): Money {
         val format = formats.getValue(currency)
-        require(text.startsWith(format.prefix) && text.endsWith(format.suffix)) {
-            "\"$text\" does not match the expected $currency price format"
+        if (!text.startsWith(format.prefix) || !text.endsWith(format.suffix)) {
+            throw SteamPriceFormatException("\"$text\" does not match the expected $currency price format")
         }
 
         val withoutSymbols = text
@@ -47,17 +47,41 @@ internal object SteamPriceParser {
         val withoutThousands = withZeroCents.replace(format.thousandsSeparator, "")
 
         val decimalIndex = withoutThousands.indexOf(format.decimalSeparator)
-        require(decimalIndex >= 0) { "\"$text\" is missing a decimal part" }
+        // A whole amount can come back with the fractional part dropped entirely ("83 руб.") rather
+        // than padded the way EUR pads it with ",--". Steam does this per locale, so treating the
+        // separator as optional is what keeps a perfectly valid price from reading as a malformed
+        // response and leaving the item permanently unpriced.
+        val hasFractionalPart = decimalIndex >= 0
+        val wholePart = if (hasFractionalPart) withoutThousands.substring(0, decimalIndex) else withoutThousands
+        val fractionalPart = if (hasFractionalPart) {
+            withoutThousands.substring(decimalIndex + format.decimalSeparator.length)
+        } else {
+            ZERO_CENTS
+        }
+        if (fractionalPart.length != ZERO_CENTS.length) {
+            throw SteamPriceFormatException(
+                "\"$text\" does not have exactly ${ZERO_CENTS.length} fractional digits",
+            )
+        }
 
-        val wholePart = withoutThousands.substring(0, decimalIndex)
-        val fractionalPart = withoutThousands.substring(decimalIndex + format.decimalSeparator.length)
-        require(fractionalPart.length == 2) { "\"$text\" does not have exactly 2 fractional digits" }
-
-        val whole = wholePart.toLongOrNull()
-            ?: throw IllegalArgumentException("\"$text\" has a non-numeric whole part")
-        val fractional = fractionalPart.toLongOrNull()
-            ?: throw IllegalArgumentException("\"$text\" has a non-numeric fractional part")
+        val whole = wholePart.toDigitsOrThrow(text = text, part = "whole")
+        val fractional = fractionalPart.toDigitsOrThrow(text = text, part = "fractional")
 
         return Money(minorUnits = whole * MINOR_UNIT_SCALE + fractional, currency = currency)
     }
+
+    private fun String.toDigitsOrThrow(text: String, part: String): Long =
+        toLongOrNull() ?: throw SteamPriceFormatException("\"$text\" has a non-numeric $part part")
 }
+
+/**
+ * A price string Steam sent that this parser cannot read.
+ *
+ * Its own type on purpose, and deliberately not an [IllegalArgumentException]: the mapping in
+ * `SteamMarketRepositoryImpl` used to treat every `IllegalArgumentException` as an unusable answer,
+ * which silently swept up `UnresolvedAddressException` -- a DNS failure -- and reported a whole
+ * inventory as unpriceable. Only what this parser itself rejects should be read that way.
+ */
+internal class SteamPriceFormatException(
+    message: String,
+) : Exception(message)

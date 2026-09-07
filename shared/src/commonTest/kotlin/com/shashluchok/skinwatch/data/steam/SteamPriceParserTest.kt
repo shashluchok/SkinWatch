@@ -56,8 +56,32 @@ class SteamPriceParserTest {
     }
 
     @Test
+    fun `parses RUB whole amount that Steam returns without any fractional part`() {
+        assertEquals(
+            Money(minorUnits = 8300, currency = SteamCurrency.RUB),
+            SteamPriceParser.parse(text = "83 руб.", currency = SteamCurrency.RUB),
+        )
+    }
+
+    @Test
+    fun `parses RUB whole amount above a thousand without a fractional part`() {
+        assertEquals(
+            Money(minorUnits = 123400, currency = SteamCurrency.RUB),
+            SteamPriceParser.parse(text = "1 234 руб.", currency = SteamCurrency.RUB),
+        )
+    }
+
+    @Test
+    fun `parses USD whole amount without a fractional part`() {
+        assertEquals(
+            Money(minorUnits = 500, currency = SteamCurrency.USD),
+            SteamPriceParser.parse(text = "\$5", currency = SteamCurrency.USD),
+        )
+    }
+
+    @Test
     fun `throws on text that does not match the currency format`() {
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<SteamPriceFormatException> {
             SteamPriceParser.parse(text = "not a price", currency = SteamCurrency.USD)
         }
     }
