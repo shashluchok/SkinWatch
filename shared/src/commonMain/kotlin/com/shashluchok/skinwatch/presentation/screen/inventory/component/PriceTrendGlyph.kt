@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -41,15 +43,46 @@ private val upHeights = listOf(BAR_HEIGHT_SHORTEST, BAR_HEIGHT_SHORT, BAR_HEIGHT
 private val downHeights = listOf(BAR_HEIGHT_TALLEST, BAR_HEIGHT_TALL, BAR_HEIGHT_SHORT, BAR_HEIGHT_SHORTEST)
 private val neutralHeights =
     listOf(BAR_HEIGHT_FLAT_LOW, BAR_HEIGHT_FLAT_HIGH, BAR_HEIGHT_FLAT_LOW, BAR_HEIGHT_FLAT_HIGH)
+private val DASH_THICKNESS = 2.dp
 
 internal enum class PriceTrend { UP, DOWN, NEUTRAL }
 
-internal fun priceTrend(latestSnapshot: PriceSnapshot?, purchasePrice: Money): PriceTrend {
-    val lowestPrice = latestSnapshot?.lowestPrice ?: return PriceTrend.NEUTRAL
+internal fun priceTrend(latestSnapshot: PriceSnapshot?, purchasePrice: Money): PriceTrend? {
+    val lowestPrice = latestSnapshot?.lowestPrice ?: return null
     return when {
         lowestPrice.minorUnits > purchasePrice.minorUnits -> PriceTrend.UP
         lowestPrice.minorUnits < purchasePrice.minorUnits -> PriceTrend.DOWN
         else -> PriceTrend.NEUTRAL
+    }
+}
+
+@Composable
+internal fun PriceTrendGlyph(
+    trend: PriceTrend?,
+    modifier: Modifier = Modifier,
+) {
+    if (trend == null) {
+        NoPriceTrendDash(modifier = modifier)
+    } else {
+        PriceTrendBars(trend = trend, modifier = modifier)
+    }
+}
+
+@Composable
+private fun NoPriceTrendDash(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(DASH_THICKNESS)
+                .background(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    shape = RoundedCornerShape(BAR_CORNER_RADIUS),
+                ),
+        )
     }
 }
 
@@ -61,7 +94,7 @@ internal fun priceTrend(latestSnapshot: PriceSnapshot?, purchasePrice: Money): P
  * animations by the number of rows on screen.
  */
 @Composable
-internal fun PriceTrendGlyph(
+private fun PriceTrendBars(
     trend: PriceTrend,
     modifier: Modifier = Modifier,
 ) {

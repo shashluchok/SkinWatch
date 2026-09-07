@@ -28,13 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import coil3.compose.AsyncImage
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
-import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.SharedElementKey
 import com.shashluchok.skinwatch.presentation.component.SingleLineFadeText
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
@@ -251,18 +248,6 @@ private fun PriceHistoryGlyph(
         trend = trend,
         modifier = modifier.testTag(InventoryItemCard.Tag.PRICE_HISTORY_GLYPH),
     )
-}
-
-internal fun priceHistoryGlyphColor(
-    latestSnapshot: PriceSnapshot?,
-    purchasePrice: Money,
-    positive: Color,
-    negative: Color,
-    neutral: Color,
-): Color = when (priceTrend(latestSnapshot = latestSnapshot, purchasePrice = purchasePrice)) {
-    PriceTrend.UP -> positive
-    PriceTrend.DOWN -> negative
-    PriceTrend.NEUTRAL -> neutral
 }
 
 internal object InventoryItemCard {
