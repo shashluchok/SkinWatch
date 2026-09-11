@@ -1,13 +1,10 @@
 package com.shashluchok.skinwatch.presentation.component.modal.bottomsheet
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -17,15 +14,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
@@ -40,11 +44,10 @@ import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.hazeBlur
-import kotlinx.coroutines.launch
 
-// Material rests the partially expanded sheet at half its container's height. Both reveal curves
-// are normalised against that, so they complete when the sheet has settled rather than at an
-// assumed fraction of the window.
+// Material rests a sheet taller than half its container at that half, and a shorter one at its own
+// height. Both reveal curves are normalised against whichever of the two the sheet is heading for,
+// so they complete when it has settled rather than at an assumed fraction of the window.
 private const val PARTIALLY_EXPANDED_HEIGHT_FRACTION = 0.5f
 
 // The scrim finishes ahead of the blur, at this fraction of the sheet's travel to its resting
@@ -62,9 +65,8 @@ private val DRAG_HANDLE_TOP_PADDING = 22.dp
 private const val DRAG_HANDLE_BACKGROUND_ALPHA = 0.12f
 
 /**
- * The single app-level bottom sheet. Unlike `AlertPresentation`, this can be gated on
- * [LocalModalHost]'s current request being non-null: `ModalBottomSheet` plays its own hide
- * animation while it stays composed, it doesn't need to be kept mounted past that.
+ * The single app-level bottom sheet. Callers dismiss it by dropping their [ModalRequest]; the
+ * animation is this function's business, so nothing outside has to sequence a hide before it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,22 +75,25 @@ internal fun BottomSheetPresentation(
     modifier: Modifier = Modifier,
     containerColor: Color = BottomSheetDefaults.ContainerColor,
 ) {
-    val request =
+    val hostRequest =
         LocalModalHost.current.currentRequest?.takeIf { it.appearance == ModalRequest.Appearance.BottomSheet }
-            ?: return
-    val onDismissRequest = request.onDismissRequest
+    val retainedRequest = remember { mutableStateOf<ModalRequest?>(null) }
+    if (hostRequest != null) retainedRequest.value = hostRequest
+
+    val request = retainedRequest.value ?: return
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val density = LocalDensity.current
     val easing = LocalMotion.current.easing.standard
-    val scope = rememberCoroutineScope()
 
     val windowHeightPx = with(density) {
         LocalWindowInfo.current.containerDpSize.height
             .toPx()
     }
-    val imeInsets = WindowInsets.ime
     val statusBarInsets = WindowInsets.statusBars
     val dragHandleFadeDistancePx = with(density) { DRAG_HANDLE_FADE_DISTANCE.toPx() }
+    var sheetHeightPx by remember { mutableIntStateOf(0) }
+    var containerHeightPx by remember { mutableIntStateOf(0) }
 
     val sheetOffsetPx: () -> Float = {
         runCatching { sheetState.requireOffset() }.getOrDefault(windowHeightPx)
@@ -98,8 +103,8 @@ internal fun BottomSheetPresentation(
 
     val revealFraction: () -> Float = {
         sheetRevealFraction(
-            windowHeightPx = windowHeightPx,
-            imeBottomPx = imeInsets.getBottom(density),
+            containerHeightPx = containerHeightPx,
+            sheetHeightPx = sheetHeightPx,
             sheetOffsetPx = sheetOffsetPx(),
         )
     }
@@ -117,11 +122,16 @@ internal fun BottomSheetPresentation(
     )
 
     ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = request.onDismissRequest,
         sheetState = sheetState,
-        modifier = modifier
-            .fillMaxHeight()
-            .animateContentSize(),
+        modifier = modifier.layout { measurable, constraints ->
+            containerHeightPx = constraints.maxHeight
+            val placeable = measurable.measure(constraints)
+            sheetHeightPx = placeable.height
+            layout(width = placeable.width, height = placeable.height) {
+                placeable.place(x = 0, y = 0)
+            }
+        },
         containerColor = containerColor,
         scrimColor = Color.Transparent,
         dragHandle = {
@@ -139,21 +149,52 @@ internal fun BottomSheetPresentation(
         },
         properties = sheetProperties,
     ) {
-        NavigationBackHandler(
-            state = rememberNavigationEventState(currentInfo = NavigationEventInfo.None),
-            isBackEnabled = sheetState.isVisible,
-            onBackCompleted = {
-                scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() }
-            },
+        SheetContent(
+            request = request,
+            isRequested = hostRequest != null,
+            sheetState = sheetState,
+            onHide = { retainedRequest.value = null },
         )
-
-        request.content()
     }
 }
 
-private fun sheetRevealFraction(windowHeightPx: Float, imeBottomPx: Int, sheetOffsetPx: Float): Float {
-    val containerHeightPx = windowHeightPx - imeBottomPx
-    val restingHeightPx = containerHeightPx * PARTIALLY_EXPANDED_HEIGHT_FRACTION
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SheetContent(
+    request: ModalRequest,
+    isRequested: Boolean,
+    sheetState: SheetState,
+    onHide: () -> Unit,
+) {
+    val currentOnHide by rememberUpdatedState(onHide)
+
+    NavigationBackHandler(
+        state = rememberNavigationEventState(currentInfo = NavigationEventInfo.None),
+        isBackEnabled = sheetState.isVisible,
+        onBackCompleted = request.onDismissRequest,
+    )
+
+    LaunchedEffect(isRequested) {
+        if (isRequested) {
+            sheetState.show()
+        } else {
+            sheetState.hide()
+            currentOnHide()
+        }
+    }
+
+    request.content()
+}
+
+private fun sheetRevealFraction(
+    containerHeightPx: Int,
+    sheetHeightPx: Int,
+    sheetOffsetPx: Float,
+): Float {
+    val restingHeightPx = minOf(
+        sheetHeightPx.toFloat(),
+        containerHeightPx * PARTIALLY_EXPANDED_HEIGHT_FRACTION,
+    )
 
     // Guard the height-unknown case explicitly: dividing by zero yields NaN, which coerceIn passes
     // through unchanged (NaN comparisons are always false) instead of clamping it, so a plain
