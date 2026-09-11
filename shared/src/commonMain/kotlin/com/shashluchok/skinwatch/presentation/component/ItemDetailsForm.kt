@@ -42,6 +42,7 @@ internal fun ItemDetailsForm(
             onValueChange = onQuantityChange,
             label = { Text(text = stringResource(Res.string.dev__screen_inventory__item_form__quantity_label)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
             isError = validationError == ValidationError.INVALID_QUANTITY,
             supportingText = {
                 if (validationError == ValidationError.INVALID_QUANTITY) {
@@ -57,6 +58,7 @@ internal fun ItemDetailsForm(
             onValueChange = onPurchasePriceChange,
             label = { Text(text = stringResource(Res.string.dev__screen_inventory__item_form__purchase_price_label)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
             isError = validationError == ValidationError.INVALID_PRICE,
             supportingText = {
                 if (validationError == ValidationError.INVALID_PRICE) {

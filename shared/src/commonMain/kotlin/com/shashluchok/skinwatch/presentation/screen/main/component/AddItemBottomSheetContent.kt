@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -33,7 +32,6 @@ import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_form__sav
 import org.jetbrains.compose.resources.stringResource
 
 private const val ADD_ITEM_BOTTOM_SHEET_STEP_LABEL = "AddItemBottomSheetStep"
-private val ADD_SEARCH_STEP_HORIZONTAL_PADDING = 5.dp
 
 /** Content of the add-item bottom sheet. */
 @Composable
@@ -81,11 +79,11 @@ private fun AddSearchStep(
 
     Column {
         BottomSheetTitleBar(title = stringResource(Res.string.dev__screen_inventory__add_search__title))
-        Column(modifier = Modifier.padding(horizontal = ADD_SEARCH_STEP_HORIZONTAL_PADDING)) {
+        Column(modifier = Modifier.padding(horizontal = dimens.padding.small)) {
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = dimens.padding.small)
+                    .padding(top = dimens.padding.small, start = dimens.padding.small, end = dimens.padding.small)
                     .testTag(AddItemBottomSheetContent.Tag.SEARCH_QUERY_FIELD),
                 value = sheet.query,
                 onValueChange = onQueryChange,
@@ -93,6 +91,7 @@ private fun AddSearchStep(
                     Text(text = stringResource(Res.string.dev__screen_inventory__add_search__query_placeholder))
                 },
                 keyboardOptions = KeyboardOptions.Default,
+                singleLine = true,
             )
             when (val status = sheet.status) {
                 MainViewModel.SearchStatus.Idle -> Unit
