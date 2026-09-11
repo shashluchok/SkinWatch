@@ -186,7 +186,7 @@ private fun SheetContent(
     request.content()
 }
 
-private fun sheetRevealFraction(
+internal fun sheetRevealFraction(
     containerHeightPx: Int,
     sheetHeightPx: Int,
     sheetOffsetPx: Float,
@@ -249,15 +249,15 @@ private fun BlurScrim(
 ) {
     val gradientColorStops = rememberScrimGradientColorStops(containerColor = containerColor)
 
-    val blurRadiusDp = VISIBLE_SCRIM_BLUR_RADIUS * blurProgress()
-
     Canvas(
         modifier = modifier
             .fillMaxSize()
             .hazeBlur(
                 input = HazeInput.Sources(hazeState),
                 performanceMode = HazePerformanceMode.Balanced,
-                style = HazeBlurStyle { blurRadius(blurRadiusDp) },
+                // Read inside the style rather than in composition: the progress tracks the sheet's
+                // offset, so reading it up here recomposes this on every frame the sheet moves.
+                style = HazeBlurStyle { blurRadius(VISIBLE_SCRIM_BLUR_RADIUS * blurProgress()) },
             ),
     ) {
         drawRect(
