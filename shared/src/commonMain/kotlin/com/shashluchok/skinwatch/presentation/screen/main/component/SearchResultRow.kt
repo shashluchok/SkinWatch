@@ -1,6 +1,5 @@
 package com.shashluchok.skinwatch.presentation.screen.main.component
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import coil3.compose.AsyncImage
 import com.shashluchok.skinwatch.domain.catalog.CatalogItem
+import com.shashluchok.skinwatch.presentation.component.ItemImage
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import org.jetbrains.compose.resources.stringResource
 
@@ -38,13 +37,12 @@ internal fun SearchResultRow(
         horizontalArrangement = Arrangement.spacedBy(dimens.padding.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AsyncImage(
+        ItemImage(
             model = result.iconUrl,
             contentDescription = null,
             modifier = Modifier
                 .size(dimens.iconSize.extraLarge)
                 .clip(RoundedCornerShape(dimens.radius.small))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .testTag(SearchResultRow.Tag.ICON),
             contentScale = ContentScale.Crop,
         )

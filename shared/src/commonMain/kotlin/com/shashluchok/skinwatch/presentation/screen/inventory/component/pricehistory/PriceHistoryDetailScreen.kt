@@ -39,9 +39,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import coil3.compose.AsyncImage
 import com.shashluchok.skinwatch.domain.inventory.InventoryItem
 import com.shashluchok.skinwatch.domain.steam.Money
+import com.shashluchok.skinwatch.presentation.component.ItemImage
 import com.shashluchok.skinwatch.presentation.component.SharedElementKey
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalAnimatedVisibilityScope
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
@@ -236,7 +236,7 @@ private fun DetailHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(dimens.padding.small),
         ) {
-            AsyncImage(
+            ItemImage(
                 model = item.iconUrl,
                 contentDescription = null,
                 modifier = Modifier
