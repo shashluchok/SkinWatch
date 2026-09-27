@@ -1,6 +1,5 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory
 
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.presentation.util.displayTimeZone
@@ -10,57 +9,53 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Instant
 
-private fun snapshotWithLowestPrice(minorUnits: Long): PriceSnapshot = PriceSnapshot(
-    marketHashName = "AK-47 | Redline",
-    currency = SteamCurrency.USD,
-    lowestPrice = Money(minorUnits = minorUnits, currency = SteamCurrency.USD),
-    medianPrice = null,
-    volume = null,
+private fun readingOf(minorUnits: Long): PriceReading = PriceReading(
+    price = Money(minorUnits = minorUnits, currency = SteamCurrency.USD),
     capturedAt = Instant.fromEpochMilliseconds(0L),
 )
 
 class PriceHistoryChartTest {
     @Test
-    fun `yAxisMax is 118 percent of the all-time highest lowest price when it exceeds purchase price`() {
-        val snapshots = listOf(
-            snapshotWithLowestPrice(minorUnits = 5_000L),
-            snapshotWithLowestPrice(minorUnits = 10_000L),
+    fun `yAxisMax is 118 percent of the all-time highest reading when it exceeds purchase price`() {
+        val readings = listOf(
+            readingOf(minorUnits = 5_000L),
+            readingOf(minorUnits = 10_000L),
         )
         val purchasePrice = Money(minorUnits = 4_000L, currency = SteamCurrency.USD)
 
-        val yAxisMax = priceHistoryYAxisMax(snapshots = snapshots, purchasePrice = purchasePrice)
+        val yAxisMax = priceHistoryYAxisMax(readings = readings, purchasePrice = purchasePrice)
 
         assertEquals(expected = 118.0, actual = yAxisMax, absoluteTolerance = 0.0001)
     }
 
     @Test
-    fun `yAxisMax is 118 percent of purchase price when it exceeds the all-time highest lowest price`() {
-        val snapshots = listOf(snapshotWithLowestPrice(minorUnits = 3_000L))
+    fun `yAxisMax is 118 percent of purchase price when it exceeds the all-time highest reading`() {
+        val readings = listOf(readingOf(minorUnits = 3_000L))
         val purchasePrice = Money(minorUnits = 10_000L, currency = SteamCurrency.USD)
 
-        val yAxisMax = priceHistoryYAxisMax(snapshots = snapshots, purchasePrice = purchasePrice)
+        val yAxisMax = priceHistoryYAxisMax(readings = readings, purchasePrice = purchasePrice)
 
         assertEquals(expected = 118.0, actual = yAxisMax, absoluteTolerance = 0.0001)
     }
 
     @Test
-    fun `yAxisMax falls back to the all-time highest lowest price when purchase price is null`() {
-        val snapshots = listOf(snapshotWithLowestPrice(minorUnits = 10_000L))
+    fun `yAxisMax falls back to the all-time highest reading when purchase price is null`() {
+        val readings = listOf(readingOf(minorUnits = 10_000L))
 
-        val yAxisMax = priceHistoryYAxisMax(snapshots = snapshots, purchasePrice = null)
+        val yAxisMax = priceHistoryYAxisMax(readings = readings, purchasePrice = null)
 
         assertEquals(expected = 118.0, actual = yAxisMax, absoluteTolerance = 0.0001)
     }
 
     @Test
-    fun `priceHistoryReadingRange spans the all-time lowest to highest lowestPrice reading`() {
-        val snapshots = listOf(
-            snapshotWithLowestPrice(minorUnits = 5_000L),
-            snapshotWithLowestPrice(minorUnits = 10_000L),
-            snapshotWithLowestPrice(minorUnits = 3_000L),
+    fun `priceHistoryReadingRange spans the all-time lowest to highest reading`() {
+        val readings = listOf(
+            readingOf(minorUnits = 5_000L),
+            readingOf(minorUnits = 10_000L),
+            readingOf(minorUnits = 3_000L),
         )
 
-        val range = priceHistoryReadingRange(snapshots)
+        val range = priceHistoryReadingRange(readings)
 
         assertEquals(expected = 30.0..100.0, actual = range)
     }

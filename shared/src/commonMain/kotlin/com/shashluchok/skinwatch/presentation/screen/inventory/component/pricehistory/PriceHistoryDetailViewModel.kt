@@ -3,7 +3,6 @@ package com.shashluchok.skinwatch.presentation.screen.inventory.component.priceh
 import androidx.lifecycle.viewModelScope
 import com.shashluchok.skinwatch.domain.inventory.InventoryItem
 import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.presentation.screen.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -15,7 +14,7 @@ internal class PriceHistoryDetailViewModel(
 ) : BaseViewModel<PriceHistoryDetailViewModel.State, PriceHistoryDetailViewModel.Action>() {
     sealed interface State {
         data class Content(
-            val snapshots: List<PriceSnapshot> = emptyList(),
+            val readings: List<PriceReading> = emptyList(),
         ) : State
 
         data object Loading : State
@@ -40,10 +39,10 @@ internal class PriceHistoryDetailViewModel(
 
     private fun onDisplay(item: InventoryItem) {
         viewModelScope.launch {
-            val snapshots = observePriceHistory(item.marketHashName).first()
+            val readings = observePriceHistory(item.marketHashName).first().toPriceReadings()
             mutableStateFlow.update {
                 State.Content(
-                    snapshots = snapshots,
+                    readings = readings,
                 )
             }
         }

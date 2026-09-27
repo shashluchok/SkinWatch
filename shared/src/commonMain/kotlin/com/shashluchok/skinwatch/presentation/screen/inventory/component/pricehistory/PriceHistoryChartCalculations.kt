@@ -1,6 +1,5 @@
 package com.shashluchok.skinwatch.presentation.screen.inventory.component.pricehistory
 
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.presentation.util.displayTimeZone
@@ -26,17 +25,17 @@ private const val Y_AXIS_HEADROOM_MULTIPLIER = 1.18
 internal const val PURCHASE_PRICE_TICK_EPSILON = 0.01
 
 /**
- * The Y-axis maximum: the higher of the all-time highest `lowestPrice` reading and the purchase
- * price, plus [Y_AXIS_HEADROOM_MULTIPLIER] headroom, both in major currency units. A missing
- * purchase price simply drops out of the comparison rather than forcing a fallback value, since
- * `0` can never be the larger of the two once any priced snapshot exists.
+ * The Y-axis maximum: the higher of the all-time highest reading and the purchase price, plus
+ * [Y_AXIS_HEADROOM_MULTIPLIER] headroom, both in major currency units. A missing purchase price
+ * simply drops out of the comparison rather than forcing a fallback value, since `0` can never be
+ * the larger of the two once there is a reading at all.
  */
-internal fun priceHistoryYAxisMax(snapshots: List<PriceSnapshot>, purchasePrice: Money?): Double {
-    val maxLowestPriceMajorUnits = snapshots
-        .maxOfOrNull { (it.lowestPrice?.minorUnits ?: 0L) / MINOR_UNITS_PER_MAJOR_UNIT }
+internal fun priceHistoryYAxisMax(readings: List<PriceReading>, purchasePrice: Money?): Double {
+    val maxReadingMajorUnits = readings
+        .maxOfOrNull { it.price.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT }
         ?: 0.0
     val purchasePriceMajorUnits = (purchasePrice?.minorUnits ?: 0L) / MINOR_UNITS_PER_MAJOR_UNIT
-    return max(maxLowestPriceMajorUnits, purchasePriceMajorUnits) * Y_AXIS_HEADROOM_MULTIPLIER
+    return max(maxReadingMajorUnits, purchasePriceMajorUnits) * Y_AXIS_HEADROOM_MULTIPLIER
 }
 
 /** Total Y-axis labels when the axis is centered on the purchase price -- always odd, so one lands exactly on it. */
@@ -52,12 +51,11 @@ private const val PURCHASE_PRICE_CENTERED_STEPS_PER_SIDE = (PURCHASE_PRICE_CENTE
 private const val DEGENERATE_STEP_FRACTION = 0.05
 
 /**
- * The all-time lowest/highest `lowestPrice` reading, in major currency units -- `0.0..0.0` if every
- * snapshot is missing a price (shouldn't happen in practice: the chart only renders once at least
- * one snapshot is priced, see `PriceHistoryDetailScreen`).
+ * The all-time lowest/highest reading, in major currency units -- `0.0..0.0` for no readings at all,
+ * which the chart never renders for (see `PriceHistoryDetailScreen`).
  */
-internal fun priceHistoryReadingRange(snapshots: List<PriceSnapshot>): ClosedFloatingPointRange<Double> {
-    val prices = snapshots.mapNotNull { it.lowestPrice?.minorUnits }.map { it / MINOR_UNITS_PER_MAJOR_UNIT }
+internal fun priceHistoryReadingRange(readings: List<PriceReading>): ClosedFloatingPointRange<Double> {
+    val prices = readings.map { it.price.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT }
     return (prices.minOrNull() ?: 0.0)..(prices.maxOrNull() ?: 0.0)
 }
 

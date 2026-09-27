@@ -68,8 +68,43 @@ class PriceHistoryDetailViewModelTest {
 
         val state = viewModel.stateFlow.value
         check(state is PriceHistoryDetailViewModel.State.Content)
-        assertEquals(1, state.snapshots.size)
-        assertEquals(Money(minorUnits = 5000, currency = SteamCurrency.USD), state.snapshots.single().lowestPrice)
+        assertEquals(expected = 1, actual = state.readings.size)
+        assertEquals(
+            expected = Money(minorUnits = 5000, currency = SteamCurrency.USD),
+            actual = state.readings.single().price,
+        )
+    }
+
+    /**
+     * Steam answers with no price at all for an item with no live listings. Such a snapshot is no
+     * longer stored, but a history recorded before that was true can still hold one -- and it is not
+     * a reading: plotting it would put a price of zero on the chart.
+     */
+    @Test
+    fun `a stored snapshot with no price is left out of the readings`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        priceSnapshotRepository.emitSnapshot(
+            marketHashName = SAMPLE_HASH_NAME,
+            lowestPrice = null,
+            capturedAt = Instant.fromEpochMilliseconds(1_000),
+        )
+        priceSnapshotRepository.emitSnapshot(
+            marketHashName = SAMPLE_HASH_NAME,
+            lowestPrice = Money(minorUnits = 5000, currency = SteamCurrency.USD),
+            capturedAt = Instant.fromEpochMilliseconds(2_000),
+        )
+
+        viewModel.onAction(PriceHistoryDetailViewModel.Action.OnDisplay(SAMPLE_ITEM))
+        dispatcher.scheduler.runCurrent()
+
+        val state = viewModel.stateFlow.value
+        check(state is PriceHistoryDetailViewModel.State.Content)
+        val reading = state.readings.single()
+        assertEquals(
+            expected = Money(minorUnits = 5000, currency = SteamCurrency.USD),
+            actual = reading.price,
+        )
+        assertEquals(expected = Instant.fromEpochMilliseconds(2_000), actual = reading.capturedAt)
     }
 
     @Test
@@ -80,7 +115,7 @@ class PriceHistoryDetailViewModelTest {
             viewModel.onAction(PriceHistoryDetailViewModel.Action.OnDisplay(SAMPLE_ITEM))
             dispatcher.scheduler.runCurrent()
 
-            assertEquals(PriceHistoryDetailViewModel.State.Content(snapshots = emptyList()), viewModel.stateFlow.value)
+            assertEquals(PriceHistoryDetailViewModel.State.Content(readings = emptyList()), viewModel.stateFlow.value)
         }
 
     @Test

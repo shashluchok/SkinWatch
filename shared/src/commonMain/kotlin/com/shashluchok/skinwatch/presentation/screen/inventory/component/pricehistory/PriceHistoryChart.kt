@@ -55,7 +55,6 @@ import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.presentation.theme.AppFontFamilies
@@ -90,8 +89,11 @@ private const val CHART_GUIDELINE_ALPHA = 0.5f
 private const val X_STEP_DIVISION_COUNT = 1_000.0
 
 /**
- * X values are each snapshot's `capturedAt` as epoch milliseconds (real temporal spacing, not an
- * even index), Y values are `lowestPrice` in major units. [LineCartesianLayer.Interpolator.Sharp]
+ * Needs at least two [readings] -- the empty and single-reading states are `PriceHistoryBody`'s, and
+ * an axis derived from one point, or from none, has nothing to span.
+ *
+ * X values are each reading's `capturedAt` as epoch milliseconds (real temporal spacing, not an
+ * even index), Y values are its price in major units. [LineCartesianLayer.Interpolator.Sharp]
  * draws straight segments between points -- no smoothing, so the line only ever shows real, honest
  * readings (see design addendum section 2). The purchase-price horizontal reference line uses
  * Vico's [HorizontalLine] decoration plus an always-present [PurchasePriceLegend] row below the
@@ -104,32 +106,32 @@ private const val X_STEP_DIVISION_COUNT = 1_000.0
  */
 @Composable
 internal fun PriceHistoryChart(
-    snapshots: List<PriceSnapshot>,
+    readings: List<PriceReading>,
     purchasePrice: Money?,
     modifier: Modifier = Modifier,
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    LaunchedEffect(snapshots) {
+    LaunchedEffect(readings) {
         modelProducer.runTransaction {
             lineModel {
                 series(
-                    x = snapshots.map { it.capturedAt.toEpochMilliseconds() },
-                    y = snapshots.map { (it.lowestPrice?.minorUnits ?: 0L) / MINOR_UNITS_PER_MAJOR_UNIT },
+                    x = readings.map { it.capturedAt.toEpochMilliseconds() },
+                    y = readings.map { it.price.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT },
                 )
             }
         }
     }
 
-    val currency = snapshots.first().currency
+    val currency = readings.first().price.currency
     val purchasePriceValue = remember(purchasePrice) {
         purchasePrice?.let { it.minorUnits / MINOR_UNITS_PER_MAJOR_UNIT }
     }
     // With a purchase price, the axis is centered on it (see priceHistoryStartAxis); without one,
     // it falls back to the original 0-based range with headroom over the all-time high.
-    val yAxisRange = remember(snapshots, purchasePrice, purchasePriceValue) {
+    val yAxisRange = remember(readings, purchasePrice, purchasePriceValue) {
         if (purchasePriceValue != null) {
-            val readingRange = priceHistoryReadingRange(snapshots)
+            val readingRange = priceHistoryReadingRange(readings)
             val step = purchasePriceCenteredYAxisStep(
                 minPrice = readingRange.start,
                 maxPrice = readingRange.endInclusive,
@@ -137,13 +139,13 @@ internal fun PriceHistoryChart(
             )
             purchasePriceCenteredYAxisRange(purchasePrice = purchasePriceValue, step = step)
         } else {
-            0.0..priceHistoryYAxisMax(snapshots = snapshots, purchasePrice = purchasePrice)
+            0.0..priceHistoryYAxisMax(readings = readings, purchasePrice = purchasePrice)
         }
     }
     // The chart's real first/last reading timestamps -- the X axis's adaptive item placer divides
     // this exact range into evenly spaced date labels (see priceHistoryBottomAxisItemPlacer).
-    val minX = remember(snapshots) { snapshots.minOf { it.capturedAt.toEpochMilliseconds() }.toDouble() }
-    val maxX = remember(snapshots) { snapshots.maxOf { it.capturedAt.toEpochMilliseconds() }.toDouble() }
+    val minX = remember(readings) { readings.minOf { it.capturedAt.toEpochMilliseconds() }.toDouble() }
+    val maxX = remember(readings) { readings.maxOf { it.capturedAt.toEpochMilliseconds() }.toDouble() }
     val axisTitle = stringResource(
         Res.string.dev__screen_inventory__price_history_detail__price_axis_label,
         currency.name,
@@ -460,7 +462,7 @@ private fun priceHistoryBottomAxisItemPlacer(minX: Double, maxX: Double): Horizo
  * Tap tooltip: exact price and exact reading timestamp for the tapped point. [target.x] is already
  * the real captured-at epoch millis (not an interpolated touch position -- the series' x values are
  * literal timestamps), and [LineCartesianLayerMarkerTarget.Point.entry]'s `y` is the exact plotted
- * price, so no extra lookup against the original [PriceSnapshot] list is needed. [guideline] draws
+ * price, so no extra lookup against the original [PriceReading] list is needed. [guideline] draws
  * the vertical line from the tapped point down to its date on the X axis, tying the tooltip to the
  * exact reading it describes. The price line is tinted with the same profit/loss colors as the
  * chart itself -- green above [purchasePriceValue], red below, untinted when they're exactly equal

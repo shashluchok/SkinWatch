@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalSemanticColors
@@ -35,7 +34,7 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Composable
 internal fun SinglePriceReading(
-    snapshot: PriceSnapshot,
+    reading: PriceReading,
     purchasePrice: Money?,
     modifier: Modifier = Modifier,
 ) {
@@ -50,28 +49,25 @@ internal fun SinglePriceReading(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val price = snapshot.lowestPrice
-        if (price != null) {
-            Text(
-                modifier = Modifier.testTag(SinglePriceReading.Tag.PRICE),
-                text = formatMoney(price),
-                style = MaterialTheme.typography.headlineMedium.tabularNumeric,
-            )
-        }
+        Text(
+            modifier = Modifier.testTag(SinglePriceReading.Tag.PRICE),
+            text = formatMoney(reading.price),
+            style = MaterialTheme.typography.headlineMedium.tabularNumeric,
+        )
         Text(
             modifier = Modifier.padding(top = dimens.padding.extraSmall),
             text = stringResource(
                 Res.string.dev__screen_inventory__price_history_detail__single_reading__updated,
-                relativeTimeText(snapshot.capturedAt),
+                relativeTimeText(reading.capturedAt),
             ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        if (purchasePrice != null && price != null) {
+        if (purchasePrice != null) {
             PurchaseComparison(
                 purchasePrice = purchasePrice,
-                currentPrice = price,
+                currentPrice = reading.price,
                 modifier = Modifier.padding(top = dimens.padding.medium),
             )
         }

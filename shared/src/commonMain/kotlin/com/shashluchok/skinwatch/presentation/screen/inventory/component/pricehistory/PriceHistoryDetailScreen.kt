@@ -41,7 +41,6 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import coil3.compose.AsyncImage
 import com.shashluchok.skinwatch.domain.inventory.InventoryItem
-import com.shashluchok.skinwatch.domain.pricesnapshot.PriceSnapshot
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.presentation.component.SharedElementKey
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalAnimatedVisibilityScope
@@ -178,8 +177,8 @@ private fun Content(
 
         AnimatedContent(
             targetState = state,
-        ) { snapshotsState ->
-            when (snapshotsState) {
+        ) { contentState ->
+            when (contentState) {
                 is PriceHistoryDetailViewModel.State.Content -> {
                     // Scrollable, so the body is measured against an unbounded height. Beyond
                     // letting tall content scroll on short screens, this is what keeps the chart at
@@ -189,7 +188,7 @@ private fun Content(
                     // measurement, which throws.
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         PriceHistoryBody(
-                            pricedSnapshots = snapshotsState.snapshots,
+                            readings = contentState.readings,
                             purchasePrice = item.purchasePrice,
                         )
                     }
@@ -203,17 +202,17 @@ private fun Content(
 }
 
 @Composable
-private fun PriceHistoryBody(pricedSnapshots: List<PriceSnapshot>, purchasePrice: Money?) {
+private fun PriceHistoryBody(readings: List<PriceReading>, purchasePrice: Money?) {
     when {
-        pricedSnapshots.isEmpty() -> PriceHistoryEmptyState()
+        readings.isEmpty() -> PriceHistoryEmptyState()
         // One point is not a trend -- see SinglePriceReading for why it is not plotted.
-        pricedSnapshots.size == SINGLE_READING_COUNT -> SinglePriceReading(
-            snapshot = pricedSnapshots.single(),
+        readings.size == SINGLE_READING_COUNT -> SinglePriceReading(
+            reading = readings.single(),
             purchasePrice = purchasePrice,
         )
 
         else -> PriceHistoryChart(
-            snapshots = pricedSnapshots,
+            readings = readings,
             purchasePrice = purchasePrice,
             modifier = Modifier.testTag(PriceHistoryDetailScreen.Tag.CHART),
         )
