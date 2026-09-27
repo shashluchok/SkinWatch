@@ -9,6 +9,8 @@ import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
+import com.shashluchok.skinwatch.domain.steam.SAMPLE_PRICE_OVERVIEW
+import com.shashluchok.skinwatch.domain.steam.SAMPLE_UNPRICED_OVERVIEW
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
@@ -55,13 +57,7 @@ class AddInventoryItemInteractorTest {
 
     @Test
     fun `records a price snapshot when the price overview succeeds`() = runTest {
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(
-                lowestPrice = Money(minorUnits = 4900, currency = SteamCurrency.USD),
-                medianPrice = Money(minorUnits = 5000, currency = SteamCurrency.USD),
-                volume = 42,
-            ),
-        )
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(SAMPLE_PRICE_OVERVIEW)
 
         interactor(
             marketHashName = "Item",
@@ -71,7 +67,52 @@ class AddInventoryItemInteractorTest {
         )
 
         val recorded = priceSnapshotRepository.recorded.single()
-        assertEquals(Money(minorUnits = 4900, currency = SteamCurrency.USD), recorded.lowestPrice)
+        assertEquals(expected = SAMPLE_PRICE_OVERVIEW.lowestPrice, actual = recorded.lowestPrice)
+    }
+
+    /**
+     * Steam answers `success` with no price at all for an item with no live listings. There is no
+     * reading to keep, and a stored blank one would plot as a zero and evict a real price the
+     * retention pass would otherwise have kept.
+     */
+    @Test
+    fun `records no price snapshot when the overview carries no price, but still marks the item synced`() = runTest {
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(SAMPLE_UNPRICED_OVERVIEW)
+
+        interactor(
+            marketHashName = "Item",
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePriceAmount = 5.0,
+        )
+
+        assertEquals(expected = emptyList(), actual = priceSnapshotRepository.recorded)
+        assertTrue(itemSyncStatusRepository.statuses.getValue("Item") is ItemSyncStatus.Synced)
+    }
+
+    /**
+     * The answer leaves no snapshot to read a freshness decision off, so without the recorded sync
+     * time every duplicate add would spend another request on the same no-price answer.
+     */
+    @Test
+    fun `skips the fetch for a duplicate of an item Steam has no price for`() = runTest {
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(SAMPLE_UNPRICED_OVERVIEW)
+        val hashName = "AK-47 | Redline (Field-Tested)"
+        interactor(
+            marketHashName = hashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePriceAmount = 5.0,
+        )
+
+        interactor(
+            marketHashName = hashName,
+            iconUrl = "https://example.com/icon.png",
+            quantity = 1,
+            purchasePriceAmount = 5.0,
+        )
+
+        assertEquals(expected = 1, actual = steamMarketRepository.priceOverviewCalls.size)
     }
 
     @Test

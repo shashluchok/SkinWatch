@@ -9,3 +9,5 @@ internal data class SteamPriceOverview(
     val medianPrice: Money?,
     val volume: Int?,
 )
+
+internal val SteamPriceOverview.isPriced: Boolean get() = lowestPrice != null

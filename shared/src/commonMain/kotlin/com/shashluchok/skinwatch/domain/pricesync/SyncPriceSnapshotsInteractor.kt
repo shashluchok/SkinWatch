@@ -7,6 +7,8 @@ import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
+import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
+import com.shashluchok.skinwatch.domain.steam.isPriced
 import com.shashluchok.skinwatch.domain.synclog.SyncLogRepository
 import com.shashluchok.skinwatch.domain.synclog.SyncLogTag
 import com.shashluchok.skinwatch.domain.synclog.error
@@ -97,9 +99,9 @@ internal class SyncPriceSnapshotsInteractor(
         )
         val tally = syncAll(due = due, capturedAt = capturedAt)
 
-        // Only a run with nothing left to fix advances this. Items Steam cannot price are excluded
-        // on purpose: they fail identically on every attempt, so counting them would freeze the
-        // timestamp forever and keep the staleness check firing on every single app open.
+        // Only a run with nothing left to fix advances this. Items whose fetch keeps failing are
+        // excluded on purpose: they fail identically on every attempt, so counting them would freeze
+        // the timestamp forever and keep the staleness check firing on every single app open.
         if (tally.isComplete) {
             priceSyncStatusRepository.markCompleted(capturedAt)
             syncLog.info(
@@ -229,25 +231,55 @@ internal class SyncPriceSnapshotsInteractor(
                 elapsed = elapsed.toString(),
             )
         } else {
+            recordItemSuccess(
+                marketHashName = marketHashName,
+                priceOverview = priceOverview,
+                currency = currency,
+                capturedAt = capturedAt,
+                elapsed = elapsed.toString(),
+            )
+        }
+        priceSnapshotRepository.compactHistory(marketHashName = marketHashName, now = capturedAt)
+
+        return result
+    }
+
+    /**
+     * An item with no live listings answers with no price at all, and that is not a failure: another
+     * attempt would answer the same, and counting it as one would put the item on a backoff curve and
+     * hold the whole run back. There is simply no reading to store -- and a stored blank one would be
+     * the newest snapshot of its day, which is the one [PriceSnapshotRepository.compactHistory] keeps.
+     */
+    private suspend fun recordItemSuccess(
+        marketHashName: String,
+        priceOverview: SteamPriceOverview,
+        currency: SteamCurrency,
+        capturedAt: Instant,
+        elapsed: String,
+    ): ItemSyncResult {
+        val isPriced = priceOverview.isPriced
+        if (isPriced) {
             priceSnapshotRepository.record(
                 marketHashName = marketHashName,
                 overview = priceOverview,
                 currency = currency,
                 capturedAt = capturedAt,
             )
-            itemSyncStatusRepository.markSynced(marketHashName = marketHashName, at = capturedAt)
-            syncLog.info(
-                tag = SyncLogTag.ITEM,
-                message = "fetched in $elapsed, snapshot recorded at $capturedAt " +
-                    "(lowest=${priceOverview.lowestPrice}, median=${priceOverview.medianPrice}, " +
-                    "volume=${priceOverview.volume})",
-                marketHashName = marketHashName,
-            )
-            ItemSyncResult.Synced
         }
-        priceSnapshotRepository.compactHistory(marketHashName = marketHashName, now = capturedAt)
+        itemSyncStatusRepository.markSynced(marketHashName = marketHashName, at = capturedAt)
+        val message = if (isPriced) {
+            "fetched in $elapsed, snapshot recorded at $capturedAt"
+        } else {
+            "fetched in $elapsed with no price at all -- no snapshot recorded, counted as synced"
+        }
+        syncLog.info(
+            tag = SyncLogTag.ITEM,
+            message = "$message (lowest=${priceOverview.lowestPrice}, median=${priceOverview.medianPrice}, " +
+                "volume=${priceOverview.volume})",
+            marketHashName = marketHashName,
+        )
 
-        return result
+        return ItemSyncResult.Synced
     }
 
     private suspend fun recordItemFailure(

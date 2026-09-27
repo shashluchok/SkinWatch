@@ -12,6 +12,7 @@ import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
 import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
+import com.shashluchok.skinwatch.domain.steam.isPriced
 import com.shashluchok.skinwatch.domain.synclog.SyncLogRepository
 import com.shashluchok.skinwatch.domain.synclog.SyncLogTag
 import com.shashluchok.skinwatch.domain.synclog.error
@@ -82,7 +83,7 @@ internal class AddInventoryItemInteractor(
             throw throwable
         }
         when (overview) {
-            is SteamMarketResult.Success -> recordInitialPrice(
+            is SteamMarketResult.Success -> recordInitialFetch(
                 marketHashName = marketHashName,
                 priceOverview = overview.data,
                 currency = currency,
@@ -98,28 +99,38 @@ internal class AddInventoryItemInteractor(
     }
 
     /**
-     * The sync status is written alongside the snapshot, not only the snapshot itself: the scheduled
-     * run decides what to re-request purely from that status, so an item priced here without one
-     * would count as never synced and be fetched again on the very next run.
+     * The sync status is written whether or not a snapshot was: the scheduled run decides what to
+     * re-request purely from that status, so an item priced here without one would count as never
+     * synced and be fetched again on the very next run.
+     *
+     * An item with no live listings answers with no price at all, and that leaves no snapshot behind
+     * -- there is no reading in it to keep.
      */
-    private suspend fun recordInitialPrice(
+    private suspend fun recordInitialFetch(
         marketHashName: String,
         priceOverview: SteamPriceOverview,
         currency: SteamCurrency,
         elapsed: String,
     ) {
         val capturedAt = Clock.System.now()
-        priceSnapshotRepository.record(
-            marketHashName = marketHashName,
-            overview = priceOverview,
-            currency = currency,
-            capturedAt = capturedAt,
-        )
+        val isPriced = priceOverview.isPriced
+        if (isPriced) {
+            priceSnapshotRepository.record(
+                marketHashName = marketHashName,
+                overview = priceOverview,
+                currency = currency,
+                capturedAt = capturedAt,
+            )
+        }
         itemSyncStatusRepository.markSynced(marketHashName = marketHashName, at = capturedAt)
+        val message = if (isPriced) {
+            "initial price recorded at $capturedAt after $elapsed"
+        } else {
+            "answered in $elapsed with no price at all -- no snapshot recorded, counted as synced"
+        }
         syncLog.info(
             tag = SyncLogTag.ADD,
-            message = "initial price recorded at $capturedAt after $elapsed " +
-                "(lowest=${priceOverview.lowestPrice}, median=${priceOverview.medianPrice})",
+            message = "$message (lowest=${priceOverview.lowestPrice}, median=${priceOverview.medianPrice})",
             marketHashName = marketHashName,
         )
     }
@@ -149,20 +160,26 @@ internal class AddInventoryItemInteractor(
     }
 
     /**
-     * Skips the add-time fetch when this marketHashName was already priced recently -- otherwise
-     * adding a duplicate of an already-tracked item would write another near-simultaneous snapshot
-     * that every item sharing that hash sees too.
+     * Skips the add-time fetch when this marketHashName was fetched recently -- otherwise adding a
+     * duplicate of an already-tracked item would write another near-simultaneous snapshot that every
+     * item sharing that hash sees too.
+     *
+     * A fetch that answered with no price left no snapshot behind, so the recorded success time
+     * counts too: without it, a duplicate of an item with no live listings would spend a request on
+     * every single add, and the answer could only ever be the same one.
      */
     private suspend fun needsFreshPrice(marketHashName: String): Boolean {
-        val latestCapturedAt = priceSnapshotRepository
+        val newestSnapshotAt = priceSnapshotRepository
             .observeSnapshots(marketHashName)
             .first()
             .maxOfOrNull { it.capturedAt }
+        val lastSuccessAt = itemSyncStatusRepository.getAll()[marketHashName]?.lastSuccessAt
+        val lastFetchAt = listOfNotNull(newestSnapshotAt, lastSuccessAt).maxOrNull()
         val now = Clock.System.now()
-        val needsFresh = latestCapturedAt == null || now - latestCapturedAt >= PRICE_SYNC_INTERVAL
+        val needsFresh = lastFetchAt == null || now - lastFetchAt >= PRICE_SYNC_INTERVAL
         syncLog.info(
             tag = SyncLogTag.ADD,
-            message = "newest snapshot=" + (latestCapturedAt?.let { "$it (${now - it} ago)" } ?: "none") +
+            message = "last fetch=" + (lastFetchAt?.let { "$it (${now - it} ago)" } ?: "never") +
                 ", ${if (needsFresh) "fetching now" else "reusing it, no fetch"}",
             marketHashName = marketHashName,
         )

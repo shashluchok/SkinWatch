@@ -6,10 +6,10 @@ import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
+import com.shashluchok.skinwatch.domain.steam.SAMPLE_UNPRICED_OVERVIEW
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
-import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
 import com.shashluchok.skinwatch.domain.synclog.FakeSyncLogRepository
 import com.shashluchok.skinwatch.domain.synclog.SyncLogLevel
 import com.shashluchok.skinwatch.domain.synclog.SyncLogTag
@@ -58,9 +58,6 @@ class SyncPriceSnapshotsInteractorLoggingTest {
     @Test
     fun `a run records the trigger it was started by`() = runTest {
         addTrackedItem()
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
 
         newInteractor().invoke(trigger = SyncTrigger.RETRY_WORKER)
 
@@ -84,12 +81,24 @@ class SyncPriceSnapshotsInteractorLoggingTest {
         assertTrue(SteamMarketError.InvalidResponse.toString() in failures.single().message)
     }
 
+    /** The only trace of an item Steam has no price for: it leaves no snapshot and no failure. */
+    @Test
+    fun `an answer with no price at all is recorded against the item`() = runTest {
+        addTrackedItem()
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(SAMPLE_UNPRICED_OVERVIEW)
+
+        newInteractor().invoke(trigger = SyncTrigger.MANUAL)
+
+        assertTrue(
+            syncLog
+                .entriesWith(SyncLogTag.ITEM)
+                .any { it.marketHashName == HASH_NAME && "no price at all" in it.message },
+        )
+    }
+
     @Test
     fun `a staleness decision is recorded per item`() = runTest {
         addTrackedItem()
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
 
         newInteractor().invoke(trigger = SyncTrigger.MANUAL)
 
@@ -99,9 +108,6 @@ class SyncPriceSnapshotsInteractorLoggingTest {
     @Test
     fun `a second concurrent call records why it got no run`() = runTest {
         addTrackedItem()
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
         val interactor = newInteractor()
         interactor.invoke(trigger = SyncTrigger.MANUAL)
         syncLog.clear()

@@ -6,10 +6,11 @@ import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.ResolveDisplayCurrencyInteractor
+import com.shashluchok.skinwatch.domain.steam.SAMPLE_PRICE_OVERVIEW
+import com.shashluchok.skinwatch.domain.steam.SAMPLE_UNPRICED_OVERVIEW
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketResult
-import com.shashluchok.skinwatch.domain.steam.SteamPriceOverview
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -67,14 +68,28 @@ class SyncPriceSnapshotsInteractorTest {
             quantity = 1,
             purchasePrice = Money(minorUnits = 200, currency = SteamCurrency.USD),
         )
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
 
         newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
         assertEquals(1, priceSnapshotRepository.recorded.size)
         assertEquals(1, steamMarketRepository.priceOverviewCalls.count { it == hashName })
+    }
+
+    /**
+     * An item with no live listings answers `success` with no price at all. Nothing is worth
+     * storing, but the fetch did happen -- counting it as a failure would put the item on a backoff
+     * curve and hold the whole run back over an answer no retry can improve.
+     */
+    @Test
+    fun `an item Steam has no price for gets no snapshot and still completes the run`() = runTest {
+        addTrackedItem()
+        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(SAMPLE_UNPRICED_OVERVIEW)
+
+        val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
+
+        assertEquals(expected = emptyList(), actual = priceSnapshotRepository.recorded)
+        assertEquals(expected = PriceSyncOutcome.Completed, actual = outcome)
+        assertTrue(itemSyncStatusRepository.statuses.getValue(HASH_NAME) is ItemSyncStatus.Synced)
     }
 
     @Test
@@ -93,9 +108,8 @@ class SyncPriceSnapshotsInteractorTest {
         )
         steamMarketRepository.priceOverviewResultsByHashName["fails"] =
             SteamMarketResult.Failure(SteamMarketError.Network)
-        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
+        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] =
+            SteamMarketResult.Success(SAMPLE_PRICE_OVERVIEW)
 
         newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
@@ -135,9 +149,8 @@ class SyncPriceSnapshotsInteractorTest {
         )
         steamMarketRepository.priceOverviewResultsByHashName["fails"] =
             SteamMarketResult.Failure(SteamMarketError.Network)
-        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
+        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] =
+            SteamMarketResult.Success(SAMPLE_PRICE_OVERVIEW)
 
         val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
@@ -152,9 +165,6 @@ class SyncPriceSnapshotsInteractorTest {
             iconUrl = "https://example.com/icon.png",
             quantity = 1,
             purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
-        )
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
         val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
@@ -184,9 +194,8 @@ class SyncPriceSnapshotsInteractorTest {
         )
         steamMarketRepository.priceOverviewResultsByHashName["fails"] =
             SteamMarketResult.Failure(SteamMarketError.Network)
-        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
+        steamMarketRepository.priceOverviewResultsByHashName["succeeds"] =
+            SteamMarketResult.Success(SAMPLE_PRICE_OVERVIEW)
 
         newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
@@ -259,9 +268,6 @@ class SyncPriceSnapshotsInteractorTest {
                 purchasePrice = Money(minorUnits = 100, currency = SteamCurrency.USD),
             )
         }
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
         val interactor = newInteractor()
 
         interactor.invoke(trigger = SyncTrigger.PERIODIC_WORKER)
@@ -286,9 +292,6 @@ class SyncPriceSnapshotsInteractorTest {
         itemSyncStatusRepository.markSynced(
             marketHashName = hashName,
             at = Clock.System.now() - PRICE_SYNC_INTERVAL - 1.hours,
-        )
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
         )
 
         newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
@@ -350,9 +353,6 @@ class SyncPriceSnapshotsInteractorTest {
                 at = Clock.System.now() - 2.hours,
             )
         }
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
 
         newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
@@ -388,9 +388,8 @@ class SyncPriceSnapshotsInteractorTest {
         }
         steamMarketRepository.priceOverviewResultsByHashName["written-off"] =
             SteamMarketResult.Failure(SteamMarketError.InvalidResponse)
-        steamMarketRepository.priceOverviewResultsByHashName["priceable"] = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
+        steamMarketRepository.priceOverviewResultsByHashName["priceable"] =
+            SteamMarketResult.Success(SAMPLE_PRICE_OVERVIEW)
 
         val outcome = newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
@@ -408,9 +407,6 @@ class SyncPriceSnapshotsInteractorTest {
                 at = Clock.System.now(),
             )
         }
-        steamMarketRepository.priceOverviewResult = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
 
         newInteractor().invoke(trigger = SyncTrigger.MANUAL)
 
@@ -437,9 +433,8 @@ class SyncPriceSnapshotsInteractorTest {
     fun `a run that is getting somewhere keeps going despite failures`() = runTest {
         repeat(times = 8) { addTrackedItem(marketHashName = "item-$it") }
         steamMarketRepository.priceOverviewResult = SteamMarketResult.Failure(SteamMarketError.Network)
-        steamMarketRepository.priceOverviewResultsByHashName["item-0"] = SteamMarketResult.Success(
-            SteamPriceOverview(lowestPrice = null, medianPrice = null, volume = null),
-        )
+        steamMarketRepository.priceOverviewResultsByHashName["item-0"] =
+            SteamMarketResult.Success(SAMPLE_PRICE_OVERVIEW)
 
         newInteractor().invoke(trigger = SyncTrigger.PERIODIC_WORKER)
 
