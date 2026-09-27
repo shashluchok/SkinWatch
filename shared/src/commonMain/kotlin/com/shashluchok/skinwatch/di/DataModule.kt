@@ -62,6 +62,7 @@ internal val dataModule = module {
             api = get(),
             rateLimiter = get(),
             deviceRegionCode = ::currentDeviceRegionCode,
+            priceFetchProgress = get(),
             syncLog = get(),
         )
     }

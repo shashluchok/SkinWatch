@@ -1,5 +1,6 @@
 package com.shashluchok.skinwatch.data.steam
 
+import com.shashluchok.skinwatch.domain.pricesync.PriceFetchProgress
 import com.shashluchok.skinwatch.domain.steam.Money
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
@@ -15,6 +16,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -22,11 +24,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TestTimeSource
+
+private const val HASH_NAME = "AK-47 | Inheritance (Field-Tested)"
 
 class SteamMarketRepositoryImplTest {
     private fun repositoryWithEngine(
         mockEngine: MockEngine,
         deviceRegionCode: () -> String? = { "US" },
+        priceFetchProgress: PriceFetchProgress = PriceFetchProgress(),
+        rateLimiter: SteamRateLimiter = SteamRateLimiter(minInterval = { 0.seconds }),
     ): SteamMarketRepositoryImpl {
         val httpClient = HttpClient(mockEngine) {
             // Matches HttpClientFactory's real config: expectSuccess = true is what makes a
@@ -50,8 +57,64 @@ class SteamMarketRepositoryImplTest {
             }
         }
         val api = KtorSteamMarketApi(httpClient)
-        val rateLimiter = SteamRateLimiter(minInterval = { 0.seconds })
-        return SteamMarketRepositoryImpl(api = api, rateLimiter = rateLimiter, deviceRegionCode = deviceRegionCode)
+        return SteamMarketRepositoryImpl(
+            api = api,
+            rateLimiter = rateLimiter,
+            deviceRegionCode = deviceRegionCode,
+            priceFetchProgress = priceFetchProgress,
+        )
+    }
+
+    @Test
+    fun `an item is reported as in flight for the length of its request`() = runTest {
+        val priceFetchProgress = PriceFetchProgress()
+        var inFlightDuringRequest: Set<String>? = null
+        val repository = repositoryWithEngine(
+            mockEngine = MockEngine { _ ->
+                inFlightDuringRequest = priceFetchProgress.inFlight.value
+                respond(
+                    content = """{"success":true,"lowest_price":"$51.93"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+            priceFetchProgress = priceFetchProgress,
+        )
+
+        repository.getPriceOverview(marketHashName = HASH_NAME, currency = SteamCurrency.USD)
+
+        assertEquals(expected = setOf(HASH_NAME), actual = inFlightDuringRequest)
+        assertEquals(expected = emptySet(), actual = priceFetchProgress.inFlight.value)
+    }
+
+    /**
+     * The throttle is shared, so a queued item can sit there for the better part of a minute with
+     * nothing being fetched for it -- reporting that as in flight would hold a loading treatment on
+     * screen for the whole wait.
+     */
+    @Test
+    fun `an item still queued behind the endpoint throttle is not reported as in flight`() = runTest {
+        val priceFetchProgress = PriceFetchProgress()
+        val repository = repositoryWithEngine(
+            mockEngine = MockEngine { _ ->
+                respond(
+                    content = """{"success":true,"lowest_price":"$51.93"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+            priceFetchProgress = priceFetchProgress,
+            rateLimiter = SteamRateLimiter(minInterval = { 8.seconds }, timeSource = TestTimeSource()),
+        )
+        repository.getPriceOverview(marketHashName = HASH_NAME, currency = SteamCurrency.USD)
+
+        val queued = launch {
+            repository.getPriceOverview(marketHashName = "AWP | Asiimov (Field-Tested)", currency = SteamCurrency.USD)
+        }
+        testScheduler.runCurrent()
+
+        assertEquals(expected = emptySet(), actual = priceFetchProgress.inFlight.value)
+        queued.cancel()
     }
 
     @Test

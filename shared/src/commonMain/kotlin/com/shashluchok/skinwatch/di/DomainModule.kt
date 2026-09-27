@@ -13,6 +13,7 @@ import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesnapshot.ObservePriceHistoryInteractor
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
+import com.shashluchok.skinwatch.domain.pricesync.PriceFetchProgress
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsIfStaleInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.settings.ObserveSelectedCurrencyInteractor
@@ -65,6 +66,7 @@ internal val domainModule = module {
     single { ConvertStoredPricesInteractor(exchangeRateRepository = get(), currencyConversionRepository = get()) }
 
     // Price sync
+    single { PriceFetchProgress() }
     single {
         SyncPriceSnapshotsInteractor(
             inventoryRepository = get(),

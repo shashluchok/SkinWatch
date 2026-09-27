@@ -1,6 +1,7 @@
 package com.shashluchok.skinwatch.data.steam
 
 import com.shashluchok.skinwatch.data.steam.dto.PriceOverviewResponseDto
+import com.shashluchok.skinwatch.domain.pricesync.PriceFetchProgress
 import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.domain.steam.SteamMarketError
 import com.shashluchok.skinwatch.domain.steam.SteamMarketRepository
@@ -26,6 +27,7 @@ internal class SteamMarketRepositoryImpl(
     private val api: SteamMarketApi,
     private val rateLimiter: SteamRateLimiter,
     private val deviceRegionCode: () -> String?,
+    private val priceFetchProgress: PriceFetchProgress,
     private val syncLog: SyncLogRepository = SyncLogRepository.EMPTY,
 ) : SteamMarketRepository {
     override val defaultCurrency: SteamCurrency
@@ -37,7 +39,12 @@ internal class SteamMarketRepositoryImpl(
     ): SteamMarketResult<SteamPriceOverview> = runCatching {
         awaitThrottle(marketHashName)
         val requestMark = TimeSource.Monotonic.markNow()
-        val dto = api.getPriceOverview(marketHashName = marketHashName, currency = currency)
+        // Reported as in flight from here rather than from the top of the call: a request queued
+        // behind the throttle can sit there for the better part of a minute, and nothing is being
+        // fetched for it yet.
+        val dto = priceFetchProgress.track(marketHashName = marketHashName) {
+            api.getPriceOverview(marketHashName = marketHashName, currency = currency)
+        }
         syncLog.info(
             tag = SyncLogTag.HTTP,
             message = "responded in ${requestMark.elapsedNow()}: success=${dto.success}, " +
