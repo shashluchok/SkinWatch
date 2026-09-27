@@ -6,6 +6,8 @@ import com.shashluchok.skinwatch.domain.steam.SteamCurrency
 import com.shashluchok.skinwatch.presentation.component.ValidationError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -15,6 +17,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
 private val SAMPLE_PURCHASE_PRICE = Money(minorUnits = 100, currency = SteamCurrency.USD)
@@ -289,6 +292,32 @@ class InventoryViewModelTest {
         // The fake sync completes synchronously within runCurrent(), so by the time it returns
         // isSyncing is back to false -- this asserts the round-trip works, not a mid-flight state.
         assertEquals(false, viewModel.stateFlow.value.isSyncing)
+    }
+
+    @Test
+    fun `state reflects which items have a price request in the air`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        val hashName = "AK-47 | Redline (Field-Tested)"
+
+        val fetch = launch { fixture.priceFetchProgress.track(marketHashName = hashName) { delay(1.hours) } }
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(expected = setOf(hashName), actual = viewModel.stateFlow.value.priceFetchesInFlight)
+        fetch.cancel()
+    }
+
+    /** A flag left standing would leave the card's placeholder on screen for as long as it is open. */
+    @Test
+    fun `state drops an item once its price request is done`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        val hashName = "AK-47 | Redline (Field-Tested)"
+        val fetch = launch { fixture.priceFetchProgress.track(marketHashName = hashName) { delay(1.hours) } }
+        dispatcher.scheduler.runCurrent()
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(expected = emptySet(), actual = viewModel.stateFlow.value.priceFetchesInFlight)
+        fetch.join()
     }
 
     @Test

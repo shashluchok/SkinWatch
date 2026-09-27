@@ -8,6 +8,7 @@ import com.shashluchok.skinwatch.domain.pricesnapshot.FakePriceSnapshotRepositor
 import com.shashluchok.skinwatch.domain.pricesync.FakeItemSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.FakePriceSyncStatusRepository
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
+import com.shashluchok.skinwatch.domain.pricesync.PriceFetchProgress
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.settings.FakeSettingsRepository
 import com.shashluchok.skinwatch.domain.steam.FakeSteamMarketRepository
@@ -33,6 +34,8 @@ internal class InventoryViewModelFixture {
 
     private val itemSyncStatusRepository = FakeItemSyncStatusRepository()
 
+    val priceFetchProgress = PriceFetchProgress()
+
     private val syncPriceSnapshots = SyncPriceSnapshotsInteractor(
         inventoryRepository = inventoryRepository,
         steamMarketRepository = steamMarketRepository,
@@ -54,5 +57,6 @@ internal class InventoryViewModelFixture {
         ),
         syncPriceSnapshots = syncPriceSnapshots,
         observeLastSyncedAt = ObserveLastSyncedAtInteractor(priceSyncStatusRepository = priceSyncStatusRepository),
+        priceFetchProgress = priceFetchProgress,
     )
 }

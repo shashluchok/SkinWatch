@@ -8,6 +8,7 @@ import com.shashluchok.skinwatch.domain.inventory.ObserveInventoryListInteractor
 import com.shashluchok.skinwatch.domain.inventory.RemoveInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.inventory.UpdateInventoryItemInteractor
 import com.shashluchok.skinwatch.domain.pricesync.ObserveLastSyncedAtInteractor
+import com.shashluchok.skinwatch.domain.pricesync.PriceFetchProgress
 import com.shashluchok.skinwatch.domain.pricesync.SyncPriceSnapshotsInteractor
 import com.shashluchok.skinwatch.domain.pricesync.SyncTrigger
 import com.shashluchok.skinwatch.domain.steam.Money
@@ -30,6 +31,7 @@ internal class InventoryViewModel(
     private val removeInventoryItem: RemoveInventoryItemInteractor,
     private val syncPriceSnapshots: SyncPriceSnapshotsInteractor,
     private val observeLastSyncedAt: ObserveLastSyncedAtInteractor,
+    private val priceFetchProgress: PriceFetchProgress,
 ) : BaseViewModel<InventoryViewModel.State, InventoryViewModel.Action>() {
     data class State(
         val content: Content = Content.Loading,
@@ -39,6 +41,7 @@ internal class InventoryViewModel(
         val priceHistoryDetailAlertItem: InventoryItem? = null,
         val lastSyncedAt: Instant? = null,
         val isSyncing: Boolean = false,
+        val priceFetchesInFlight: Set<String> = emptySet(),
     ) {
         sealed interface Content {
             data object Loading : Content
@@ -101,6 +104,7 @@ internal class InventoryViewModel(
         subscribeToInventoryList()
         subscribeToLastSyncedAt()
         subscribeToSyncStatus()
+        subscribeToPriceFetchProgress()
     }
 
     private fun subscribeToInventoryList() {
@@ -134,6 +138,12 @@ internal class InventoryViewModel(
     private fun subscribeToSyncStatus() {
         syncPriceSnapshots.isSyncing
             .onEach { isSyncing -> state = state.copy(isSyncing = isSyncing) }
+            .launchIn(viewModelScope)
+    }
+
+    private fun subscribeToPriceFetchProgress() {
+        priceFetchProgress.inFlight
+            .onEach { inFlight -> state = state.copy(priceFetchesInFlight = inFlight) }
             .launchIn(viewModelScope)
     }
 

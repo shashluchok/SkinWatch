@@ -30,10 +30,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import coil3.compose.AsyncImage
 import com.shashluchok.skinwatch.domain.inventory.InventoryListItem
+import com.shashluchok.skinwatch.presentation.component.ItemImage
 import com.shashluchok.skinwatch.presentation.component.SharedElementKey
+import com.shashluchok.skinwatch.presentation.component.ShimmerLine
 import com.shashluchok.skinwatch.presentation.component.SingleLineFadeText
+import com.shashluchok.skinwatch.presentation.component.rememberShimmerSweep
 import com.shashluchok.skinwatch.presentation.component.sharedelement.LocalSharedElementConfig
 import com.shashluchok.skinwatch.presentation.theme.LocalDimens
 import com.shashluchok.skinwatch.presentation.theme.LocalMotion
@@ -47,6 +49,8 @@ import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__ope
 import com.shashluchok.skinwatch.resources.dev__screen_inventory__item_card__purchase_price_label
 import org.jetbrains.compose.resources.stringResource
 
+private const val MARKET_PRICE_PLACEHOLDER_WIDTH_FRACTION = 0.8f
+
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
 internal fun InventoryItemCard(
@@ -54,6 +58,7 @@ internal fun InventoryItemCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     isContextMenuExpanded: Boolean,
+    isPriceLoading: Boolean,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onDismissContextMenu: () -> Unit,
@@ -96,6 +101,7 @@ internal fun InventoryItemCard(
             ) {
                 InventoryItemCardRow(
                     listItem = listItem,
+                    isPriceLoading = isPriceLoading,
                     sharedTransitionScope = sharedTransitionScope,
                     boundsTransform = boundsTransform,
                     animatedVisibilityScope = animatedVisibilityScope,
@@ -115,6 +121,7 @@ internal fun InventoryItemCard(
 @Composable
 private fun InventoryItemCardRow(
     listItem: InventoryListItem,
+    isPriceLoading: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     boundsTransform: BoundsTransform,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -127,7 +134,7 @@ private fun InventoryItemCardRow(
             horizontalArrangement = Arrangement.spacedBy(dimens.padding.small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AsyncImage(
+            ItemImage(
                 model = listItem.item.iconUrl,
                 contentDescription = null,
                 modifier = Modifier
@@ -156,7 +163,7 @@ private fun InventoryItemCardRow(
                     fadeColor = CardDefaults.cardColors().containerColor,
                     style = MaterialTheme.typography.titleMedium,
                 )
-                InventoryItemCardPrices(listItem = listItem)
+                InventoryItemCardPrices(listItem = listItem, isPriceLoading = isPriceLoading)
             }
             PriceHistoryGlyph(
                 listItem = listItem,
@@ -193,6 +200,7 @@ private fun InventoryItemCardContextMenu(
 @Composable
 private fun InventoryItemCardPrices(
     listItem: InventoryListItem,
+    isPriceLoading: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
@@ -225,13 +233,41 @@ private fun InventoryItemCardPrices(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
+                MarketPrice(
                     text = marketPriceText
                         ?: stringResource(Res.string.dev__screen_inventory__item_card__no_price_data),
-                    style = MaterialTheme.typography.bodyLarge,
+                    isLoading = isPriceLoading,
                 )
             }
         }
+    }
+}
+
+/**
+ * A request for this item's price is in the air -- the reading on screen is about to be replaced, so
+ * it gives way to a placeholder rather than sitting there looking current. The shimmer sweep is
+ * created inside the loading branch: the throttle lets one request through at a time, so at most a
+ * couple of cards are ever animating, and an idle list runs no infinite transition at all.
+ */
+@Composable
+private fun MarketPrice(
+    text: String,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (isLoading) {
+        ShimmerLine(
+            sweep = rememberShimmerSweep(),
+            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight,
+            widthFraction = MARKET_PRICE_PLACEHOLDER_WIDTH_FRACTION,
+            modifier = modifier,
+        )
+    } else {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = modifier,
+        )
     }
 }
 

@@ -75,6 +75,7 @@ private fun InventoryScreen(
         modifier = modifier.testTag(InventoryScreen.Tag.ROOT),
         content = state.content,
         expandedContextMenuItemId = state.contextMenuItem?.id,
+        priceFetchesInFlight = state.priceFetchesInFlight,
         contentPadding = PaddingValues().plusVertical(
             top = LocalTopBarInset.current,
             bottom = LocalBottomBarInset.current,
@@ -100,6 +101,7 @@ private fun InventoryScreen(
 private fun InventoryContent(
     content: InventoryViewModel.State.Content,
     expandedContextMenuItemId: Long?,
+    priceFetchesInFlight: Set<String>,
     contentPadding: PaddingValues,
     onAction: (InventoryViewModel.Action) -> Unit,
     modifier: Modifier = Modifier,
@@ -148,6 +150,7 @@ private fun InventoryContent(
                     InventoryScreenItem(
                         listItem = listItem,
                         isContextMenuExpanded = expandedContextMenuItemId == listItem.item.id,
+                        isPriceLoading = listItem.item.marketHashName in priceFetchesInFlight,
                         sharedElementKeyTransition = sharedElementKeyTransition,
                         cardVisibilityAnimationSpec = cardVisibilityAnimationSpec,
                         onAction = onAction,
@@ -162,6 +165,7 @@ private fun InventoryContent(
 private fun LazyItemScope.InventoryScreenItem(
     listItem: InventoryListItem,
     isContextMenuExpanded: Boolean,
+    isPriceLoading: Boolean,
     sharedElementKeyTransition: Transition<Long?>,
     cardVisibilityAnimationSpec: FiniteAnimationSpec<Float>,
     onAction: (InventoryViewModel.Action) -> Unit,
@@ -183,6 +187,7 @@ private fun LazyItemScope.InventoryScreenItem(
             onClick = onItemClick,
             onLongClick = onItemLongClick,
             isContextMenuExpanded = isContextMenuExpanded,
+            isPriceLoading = isPriceLoading,
             onEditClick = { onAction(InventoryViewModel.Action.OnContextMenuEditClick) },
             onDeleteClick = { onAction(InventoryViewModel.Action.OnContextMenuDeleteClick) },
             onDismissContextMenu = { onAction(InventoryViewModel.Action.OnContextMenuDismiss) },

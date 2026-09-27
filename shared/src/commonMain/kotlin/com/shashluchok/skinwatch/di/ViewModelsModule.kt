@@ -39,6 +39,7 @@ internal val viewModelModule = module {
             removeInventoryItem = get(),
             syncPriceSnapshots = get(),
             observeLastSyncedAt = get(),
+            priceFetchProgress = get(),
         )
     }
     viewModel {
